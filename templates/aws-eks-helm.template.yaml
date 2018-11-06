@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploy Helm into an EKS cluster
+Parameters:
+  KubeConfigPath:
+    Type: String
+  TillerInstallLambdaArn:
+    Type: String
+  KubeManifestLambdaArn:
+    Type: String
+  KubeConfigKmsContext:
+    Type: String
+Resources:
+  TillerInstall:
+    DependsOn: TillerRoleBinding
+    Type: "Custom::TillerInstall"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref TillerInstallLambdaArn
+      KubeConfigPath: !Ref KubeConfigPath
+      KubeConfigKmsContext: !Ref KubeConfigKmsContext
+      TillerSA: tiller
+  TillerSA:
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref KubeManifestLambdaArn
+      KubeConfigPath: !Ref KubeConfigPath
+      KubeConfigKmsContext: !Ref KubeConfigKmsContext
+      Manifest:
+        apiVersion: v1
+        kind: ServiceAccount
+        metadata:
+          name: tiller
+          namespace: kube-system
+  TillerRoleBinding:
+    DependsOn: TillerSA
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref KubeManifestLambdaArn
+      KubeConfigPath: !Ref KubeConfigPath
+      KubeConfigKmsContext: !Ref KubeConfigKmsContext
+      Manifest:
+        apiVersion: rbac.authorization.k8s.io/v1beta1
+        kind: ClusterRoleBinding
+        metadata:
+          name: tiller
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+        - kind: ServiceAccount
+          name: tiller
+          namespace: kube-system

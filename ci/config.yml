@@ -1,0 +1,16 @@
+global:
+  marketplace-ami: false
+  owner: quickstart-eng@amazon.com
+  qsname: quickstart-aws-eks
+  regions:
+    - eu-west-1
+    - us-east-1
+    - us-west-2
+  reporting: true
+  package-lambda: true
+tests:
+  quickstart-aws-eks-defaults:
+    parameter_input: aws-eks-defaults.json
+    template_file: aws-eks-master.template.yaml
+    regions:
+      - us-west-2
