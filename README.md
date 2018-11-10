@@ -23,7 +23,7 @@ dependent application components
 
 1. create EC2 Keypair
 1. Set `KeyPairName` as a [global taskcat override](https://aws-quickstart.github.io/input-files.html#parm-override)
-1. deploy `aws-eks-master.template.yaml` using taskcat 
+1. deploy `aws-eks-master.template.yaml` using taskcat `cd quickstart-aws-eks ; taskcat -v -n -c ./ci/config.yml`
 1. launch example workload template `example-workload.template.yaml`, needed parameters can be retrieved from outputs of 
 the master stack
 1. ssh into bastion host, validate that example `ConfigMap` (created by kubernetes manifest) and 
