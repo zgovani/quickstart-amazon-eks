@@ -125,6 +125,75 @@ def get_config_details(event):
     return bucket, key, kms_context
 
 
+def traverse(obj, path=None, callback=None):
+    if path is None:
+        path = []
+
+    if isinstance(obj, dict):
+        value = {k: traverse(v, path + [k], callback)
+                 for k, v in obj.items()}
+    elif isinstance(obj, list):
+        value = [traverse(obj[idx], path + [[idx]], callback)
+                 for idx in range(len(obj))]
+    else:
+        value = obj
+
+    if callback is None:
+        return value
+    else:
+        return callback(path, value)
+
+
+def traverse_modify(obj, target_path, action):
+    target_path = to_path(target_path)
+
+    def transformer(path, value):
+        if path == target_path:
+            return action(value)
+        else:
+            return value
+    return traverse(obj, callback=transformer)
+
+
+def traverse_modify_all(obj, action):
+
+    def transformer(path, value):
+        return action(value)
+    return traverse(obj, callback=transformer)
+
+
+def to_path(path):
+    if isinstance(path, list):
+        return path  # already in list format
+
+    def _iter_path(path):
+        indexes = [[int(i[1:-1])] for i in re.findall(r'\[[0-9]+\]', path)]
+        lists = re.split(r'\[[0-9]+\]', path)
+        for parts in range(len(lists)):
+            for part in lists[parts].strip('.').split('.'):
+                yield part
+            if parts < len(indexes):
+                yield indexes[parts]
+            else:
+                yield []
+    return list(_iter_path(path))[:-1]
+
+
+def set_type(input_str):
+    if type(input_str) == str:
+        if input_str.lower() == 'false':
+            return False
+        if input_str.lower() == 'true':
+            return True
+        if input_str.isdigit():
+            return int(input_str)
+    return input_str
+
+
+def fix_types(manifest):
+    return traverse_modify_all(manifest, set_type)
+
+
 def lambda_handler(event, context):
     # make sure we send a failure to CloudFormation if the function is going to timeout
     timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
@@ -143,7 +212,7 @@ def lambda_handler(event, context):
         manifest_file = '/tmp/manifest.json'
         if "PhysicalResourceId" in event.keys():
             physical_resource_id = event["PhysicalResourceId"]
-        manifest = generate_name(event, physical_resource_id)
+        manifest = fix_types(generate_name(event, physical_resource_id))
         write_manifest(manifest, manifest_file)
         print("Applying manifest: %s" % json.dumps(manifest))
         if event['RequestType'] == 'Create':
