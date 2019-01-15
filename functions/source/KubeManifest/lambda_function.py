@@ -7,6 +7,7 @@ import subprocess
 import shlex
 import os
 import re
+from ruamel import yaml
 
 
 SUCCESS = "SUCCESS"
@@ -97,6 +98,8 @@ def write_manifest(manifest, path):
 
 def generate_name(event, physical_resource_id):
     manifest = event['ResourceProperties']['Manifest']
+    if type(manifest) == str:
+        manifest = yaml.safe_load(manifest)
     stack_name = event['StackId'].split('/')[1]
     if "metadata" in manifest.keys():
         if 'name' not in manifest["metadata"].keys() and 'generateName' not in manifest["metadata"].keys():
@@ -212,7 +215,10 @@ def lambda_handler(event, context):
         manifest_file = '/tmp/manifest.json'
         if "PhysicalResourceId" in event.keys():
             physical_resource_id = event["PhysicalResourceId"]
-        manifest = fix_types(generate_name(event, physical_resource_id))
+        if type(event['ResourceProperties']['Manifest']) == str:
+            manifest = generate_name(event, physical_resource_id)
+        else:
+            manifest = fix_types(generate_name(event, physical_resource_id))
         write_manifest(manifest, manifest_file)
         print("Applying manifest: %s" % json.dumps(manifest))
         if event['RequestType'] == 'Create':
