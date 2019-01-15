@@ -329,6 +329,8 @@ Outputs:
     Value: !Ref NodeInstanceProfile
   NodeInstanceRoleArn:
     Value: !GetAtt NodeInstanceRole.Arn
+  NodeInstanceRoleName:
+    Value: !Ref NodeInstanceRole
   BastionRole:
     Value: !Ref BastionRole
   KubeConfigUploadRoleArn:
