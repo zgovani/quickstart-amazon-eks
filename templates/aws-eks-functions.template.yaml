@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploys Lambda functions required for the AWS EKS Quick Start
+Description: Deploys Lambda functions required for the AWS EKS Quick Start (qs-1p7nknoh4)
 Parameters:
   LambdaZipsBucketName:
     Description: Bucket Name where the lambda zip files should be placed

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploys EKS nodes into an existing VPC
+Description: Deploys EKS nodes into an existing VPC (qs-1p7nknoid)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploy Helm into an EKS cluster
+Description: Deploy Helm into an EKS cluster (qs-1p7nknohc)
 Parameters:
   KubeConfigPath:
     Type: String

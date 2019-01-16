@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploys IAM roles and policies required for the AWS EKS Quick Start
+Description: Deploys IAM roles and policies required for the AWS EKS Quick Start (qs-1p7nknohl)
 Parameters:
   LambdaZipsBucketName:
     Description: Bucket Name where the lambda zip files should be placed

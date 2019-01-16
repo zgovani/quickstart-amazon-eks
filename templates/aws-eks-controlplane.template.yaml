@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Deploys the EKS control plane"
+Description: "Deploys the EKS control plane (qs-1p7nknofn)"
 Parameters:
   SecurityGroupIds:
     Type: List<AWS::EC2::SecurityGroup::Id>
