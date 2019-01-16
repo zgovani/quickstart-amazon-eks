@@ -12,6 +12,8 @@ Parameters:
     Default: "EKSQuickStart"
   KubeClusterName:
     Type: String
+  NodeInstanceProfile:
+    Type: String
 Resources:
   # This resource creates a ConfigMap in the target cluster. It retrieves and decrypts a kms encrypted
   # kubernetes config file, which is automatically created when customers deploy an EKS cluster with the quickstart,
