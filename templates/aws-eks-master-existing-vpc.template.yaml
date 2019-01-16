@@ -349,3 +349,5 @@ Outputs:
     Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
   BastionIP:
     Value: !GetAtt BastionStack.Outputs.EIP1
+  EKSClusterName:
+    Value: !GetAtt EKSControlPlane.EKSName

@@ -304,3 +304,5 @@ Outputs:
     Value: !GetAtt WorkloadStack.Outputs.KubeManifestLambdaArn
   BastionIP:
     Value: !GetAtt WorkloadStack.Outputs.BastionIP
+  EKSClusterName:
+    Value: !GetAtt WorkloadStack.Outputs.EKSClusterName
