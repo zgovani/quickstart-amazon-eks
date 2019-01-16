@@ -188,6 +188,10 @@ Parameters:
     Type: "AWS::EC2::Subnet::Id"
   PrivateSubnet3ID:
     Type: "AWS::EC2::Subnet::Id"
+  KubernetesVersion:
+    Type: String
+    AllowedValues: [ "1.11", "1.10" ]
+    Default: "1.11"
 Conditions:
   CreateLambdaZipsBucket: !Equals
   - !Ref 'LambdaZipsBucketName'
@@ -230,6 +234,7 @@ Resources:
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
+        KubernetesVersion: !Ref KubernetesVersion
   HelmStack:
     DependsOn: NodeGroupStack
     Type: "AWS::CloudFormation::Stack"
@@ -301,6 +306,8 @@ Resources:
         KubeConfigUploadRoleArn: !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn
         KubeConfigUploadLambdaArn: !GetAtt FunctionStack.Outputs.KubeConfigUploadLambdaArn
         KubeConfigS3Bucket: !Ref KubeConfigBucket
+        AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
+        KubernetesVersion: !Ref KubernetesVersion
   KmsKey:
     Type: "AWS::KMS::Key"
     Properties:

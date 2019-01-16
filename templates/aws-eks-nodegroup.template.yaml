@@ -169,29 +169,154 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
   NodeInstanceProfile:
     Type: String
+  KubernetesVersion:
+    Type: String
+    AllowedValues: [ "1.11", "1.10" ]
 Mappings:
+  K8sVersionMap:
+    1.11:
+      STD: EKS111
+      GPU: EKS111GPU
+    1.10:
+      STD: EKS110
+      GPU: EKS110GPU
+  InstanceTypes:
+    t2.small: { Type: STD }
+    t2.medium: { Type: STD }
+    t2.large: { Type: STD }
+    t2.xlarge: { Type: STD }
+    t2.2xlarge: { Type: STD }
+    t3.nano: { Type: STD }
+    t3.micro: { Type: STD }
+    t3.small: { Type: STD }
+    t3.medium: { Type: STD }
+    t3.large: { Type: STD }
+    t3.xlarge: { Type: STD }
+    t3.2xlarge: { Type: STD }
+    m3.medium: { Type: STD }
+    m3.large: { Type: STD }
+    m3.xlarge: { Type: STD }
+    m3.2xlarge: { Type: STD }
+    m4.large: { Type: STD }
+    m4.xlarge: { Type: STD }
+    m4.2xlarge: { Type: STD }
+    m4.4xlarge: { Type: STD }
+    m4.10xlarge: { Type: STD }
+    m5.large: { Type: STD }
+    m5.xlarge: { Type: STD }
+    m5.2xlarge: { Type: STD }
+    m5.4xlarge: { Type: STD }
+    m5.12xlarge: { Type: STD }
+    m5.24xlarge: { Type: STD }
+    c4.large: { Type: STD }
+    c4.xlarge: { Type: STD }
+    c4.2xlarge: { Type: STD }
+    c4.4xlarge: { Type: STD }
+    c4.8xlarge: { Type: STD }
+    c5.large: { Type: STD }
+    c5.xlarge: { Type: STD }
+    c5.2xlarge: { Type: STD }
+    c5.4xlarge: { Type: STD }
+    c5.9xlarge: { Type: STD }
+    c5.18xlarge: { Type: STD }
+    i3.large: { Type: STD }
+    i3.xlarge: { Type: STD }
+    i3.2xlarge: { Type: STD }
+    i3.4xlarge: { Type: STD }
+    i3.8xlarge: { Type: STD }
+    i3.16xlarge: { Type: STD }
+    r3.xlarge: { Type: STD }
+    r3.2xlarge: { Type: STD }
+    r3.4xlarge: { Type: STD }
+    r3.8xlarge: { Type: STD }
+    r4.large: { Type: STD }
+    r4.xlarge: { Type: STD }
+    r4.2xlarge: { Type: STD }
+    r4.4xlarge: { Type: STD }
+    r4.8xlarge: { Type: STD }
+    r4.16xlarge: { Type: STD }
+    x1.16xlarge: { Type: STD }
+    x1.32xlarge: { Type: STD }
+    p2.xlarge: { Type: GPU }
+    p2.8xlarge: { Type: GPU }
+    p2.16xlarge: { Type: GPU }
+    p3.2xlarge: { Type: GPU }
+    p3.8xlarge: { Type: GPU }
+    p3.16xlarge: { Type: GPU }
+    r5.large: { Type: STD }
+    r5.xlarge: { Type: STD }
+    r5.2xlarge: { Type: STD }
+    r5.4xlarge: { Type: STD }
+    r5.12xlarge: { Type: STD }
+    r5.24xlarge: { Type: STD }
+    r5d.large: { Type: STD }
+    r5d.xlarge: { Type: STD }
+    r5d.2xlarge: { Type: STD }
+    r5d.4xlarge: { Type: STD }
+    r5d.12xlarge: { Type: STD }
+    r5d.24xlarge: { Type: STD }
+    z1d.large: { Type: STD }
+    z1d.xlarge: { Type: STD }
+    z1d.2xlarge: { Type: STD }
+    z1d.3xlarge: { Type: STD }
+    z1d.6xlarge: { Type: STD }
+    z1d.12xlarge: { Type: STD }
   AWSAMIRegionMap:
     AMI:
-      EKS: amazon-eks-node-v
-      EKSGPU: amazon-eks-gpu-node-v
-    us-east-1:
-      EKS: ami-0440e4f6b9713faf6
-      EKSGPU: ami-058bfb8c236caae89
-    us-west-2:
-      EKS: ami-0a54c984b9f908c81
-      EKSGPU: ami-0731694d53ef9604b
+      EKS111: amazon-eks-node-1.11-v20
+      EKS111GPU: amazon-eks-gpu-node-1.11-v20
+      EKS110: amazon-eks-node-1.10-v20
+      EKS110GPU: amazon-eks-gpu-node-1.10-v20
+    ap-northeast-1:
+      EKS111: ami-0f0e8066383e7a2cb
+      EKS111GPU: ami-036b3969c5eb8d3cf
+      EKS110: ami-06398bdd37d76571d
+      EKS110GPU: ami-0afc9d14b2fe11ad9
+    ap-northeast-2:
+      EKS111: ami-0b7baa90de70f683f
+      EKS111GPU: ami-0b7f163f7194396f7
+      EKS110: ami-08a87e0a7c32fa649
+      EKS110GPU: ami-0d75b9ab57bfc8c9a
+    ap-southeast-1:
+      EKS111: ami-019966ed970c18502
+      EKS111GPU: ami-093f742654a955ee6
+      EKS110: ami-0ac3510e44b5bf8ef
+      EKS110GPU: ami-0ecce0670cb66d17b
+    ap-southeast-2:
+      EKS111: ami-06ade0abbd8eca425
+      EKS111GPU: ami-05e09575123ff498b
+      EKS110: ami-0d2c929ace88cfebe
+      EKS110GPU: ami-03b048bd9d3861ce9
+    eu-central-1:
+      EKS111: ami-010caa98bae9a09e2
+      EKS111GPU: ami-0d6f0554fd4743a9d
+      EKS110: ami-08eb700778f03ea94
+      EKS110GPU: ami-000622b1016d2a5bf
+    eu-north-1:
+      EKS111: ami-06ee67302ab7cf838
+      EKS111GPU: ami-0b159b75
+      EKS110: ami-068b8a1efffd30eda
+      EKS110GPU: ami-cc149ab2
     eu-west-1:
-      EKS: ami-0c7a4976cb6fafd3a
-      EKSGPU: ami-0706dc8a5eed2eed9
-Conditions:
-  IsGpuInstance:
-    !Or
-  - !Equals [ !Ref NodeInstanceType, "p2.xlarge" ]
-  - !Equals [ !Ref NodeInstanceType, "p2.8xlarge" ]
-  - !Equals [ !Ref NodeInstanceType, "p2.16xlarge" ]
-  - !Equals [ !Ref NodeInstanceType, "p3.2xlarge" ]
-  - !Equals [ !Ref NodeInstanceType, "p3.8xlarge" ]
-  - !Equals [ !Ref NodeInstanceType, "p3.16xlarge" ]
+      EKS111: ami-01e08d22b9439c15a
+      EKS111GPU: ami-097978e7acde1fd7c
+      EKS110: ami-0de10c614955da932
+      EKS110GPU: ami-0dafd3a1dc43781f7
+    us-east-1:
+      EKS111: ami-0c24db5df6badc35a
+      EKS111GPU: ami-0ff0241c02b279f50
+      EKS110: ami-04358410d28eaab63
+      EKS110GPU: ami-0131c0ca222183def
+    us-east-2:
+      EKS111: ami-0c2e8d28b1f854c68
+      EKS111GPU: ami-006a12f54eaafc2b1
+      EKS110: ami-0b779e8ab57655b4b
+      EKS110GPU: ami-0abfb3be33c196cbf
+    us-west-2:
+      EKS111: ami-0a2abab4107669c1b
+      EKS111GPU: ami-0c9e5e2d8caa9fb5e
+      EKS110: ami-09e1df3bad220af0b
+      EKS110GPU: ami-0ebf0561e61a2be02
 Resources:
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -279,10 +404,16 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !If
-        - IsGpuInstance
-        - !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", EKSGPU ]
-        - !FindInMap [ AWSAMIRegionMap, !Ref "AWS::Region", EKS ]
+      ImageId: !FindInMap
+      - AWSAMIRegionMap
+      - !Ref "AWS::Region"
+      - !FindInMap
+        - K8sVersionMap
+        - !Ref KubernetesVersion
+        - !FindInMap
+          - InstanceTypes
+          - !Ref NodeInstanceType
+          - Type
       InstanceType: !Ref NodeInstanceType
       KeyName: !Ref KeyPairName
       SecurityGroups:

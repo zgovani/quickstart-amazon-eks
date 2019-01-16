@@ -25,6 +25,14 @@ Parameters:
   KmsContext:
     Type: String
     Default: "EKSQuickStart"
+  AdditionalEKSAdminArns:
+    Type: CommaDelimitedList
+    Default: ""
+  KubernetesVersion:
+    Type: String
+    AllowedValues: [ "1.11", "1.10" ]
+Conditions:
+  AddUsers: !Not [ !Equals [!Select [ 0, !Ref AdditionalEKSAdminArns ], ""] ]
 Resources:
   EKS:
     Type: "AWS::EKS::Cluster"
@@ -33,6 +41,7 @@ Resources:
         SecurityGroupIds: !Ref SecurityGroupIds
         SubnetIds: !Ref SubnetIds
       RoleArn: !Ref RoleArn
+      Version: !Ref KubernetesVersion
   EksNodeConfigMap:
     DependsOn: KubeConfigToS3
     Type: "Custom::KubeManifest"
@@ -48,12 +57,27 @@ Resources:
           name: aws-auth
           namespace: kube-system
         data:
-          mapRoles: !Sub |
-            - rolearn: ${NodeInstanceRoleArn}
-              username: system:node:{{EC2PrivateDNSName}}
-              groups:
-                - system:bootstrappers
-                - system:nodes
+          !If
+          - AddUsers
+          - mapUsers: !Join
+            - |
+              - username: admin
+                groups:
+                  - system:masters
+                userarn:
+            - !Ref AdditionalEKSAdminArns
+            mapRoles: !Sub |
+              - rolearn: ${NodeInstanceRoleArn}
+                username: system:node:{{EC2PrivateDNSName}}
+                groups:
+                  - system:bootstrappers
+                  - system:nodes
+          - mapRoles: !Sub |
+              - rolearn: ${NodeInstanceRoleArn}
+                username: system:node:{{EC2PrivateDNSName}}
+                groups:
+                  - system:bootstrappers
+                  - system:nodes
   KubeConfigToS3:
     Type: "Custom::ConfigToS3"
     Version: '1.0'

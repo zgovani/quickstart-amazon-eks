@@ -244,6 +244,10 @@ Parameters:
     Default: 20
     Description: Size for node volumes
     Type: String
+  KubernetesVersion:
+    Type: String
+    AllowedValues: [ "1.11", "1.10" ]
+    Default: "1.11"
   LambdaZipsBucketName:
     Description: 'OPTIONAL: Bucket Name where the lambda zip files should be placed,
         if left blank a bucket will be created.'
@@ -290,6 +294,7 @@ Resources:
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
         AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
         VPCID: !GetAtt VPCStack.Outputs.VPCID
+        KubernetesVersion: !Ref KubernetesVersion
 Outputs:
   KubeConfigPath:
     Value: !GetAtt WorkloadStack.Outputs.KubeConfigPath
