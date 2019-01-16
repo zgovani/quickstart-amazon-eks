@@ -172,12 +172,13 @@ Parameters:
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.11", "1.10" ]
+    Default: "1.11"
 Mappings:
   K8sVersionMap:
-    1.11:
+    "1.11":
       STD: EKS111
       GPU: EKS111GPU
-    1.10:
+    "1.10":
       STD: EKS110
       GPU: EKS110GPU
   InstanceTypes:
