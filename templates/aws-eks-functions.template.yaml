@@ -108,7 +108,7 @@ Resources:
       MemorySize: 128
       Role: !Ref QuickStartStackMakerRoleArn
       Runtime: python3.6
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CfnStackAssumeRole/lambda.zip'
@@ -120,7 +120,7 @@ Resources:
       MemorySize: 128
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/TillerInstall/lambda.zip'
@@ -135,7 +135,7 @@ Resources:
       MemorySize: 128
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/Helm/lambda.zip'
@@ -150,7 +150,7 @@ Resources:
       MemorySize: 128
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
@@ -166,7 +166,7 @@ Resources:
       MemorySize: 128
       Role: !Ref DeleteBucketContentsRoleArn
       Runtime: python2.7
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/DeleteBucketContents/lambda.zip'
@@ -178,7 +178,7 @@ Resources:
       MemorySize: 128
       Role: !Ref KubeConfigUploadRoleArn
       Runtime: python2.7
-      Timeout: 300
+      Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeConfigUpload/lambda.zip'
@@ -189,7 +189,7 @@ Resources:
       Handler: index.handler
       Runtime: python2.7
       Role: !Ref CopyZipsRoleArn
-      Timeout: 240
+      Timeout: 900
       Code:
         ZipFile: |
           import json
