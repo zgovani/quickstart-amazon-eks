@@ -59,7 +59,6 @@ Resources:
       SourceBucket: !Ref 'QSS3BucketName'
       Prefix: !Ref 'QSS3KeyPrefix'
       Objects:
-      - functions/packages/TillerInstall/lambda.zip
       - functions/packages/Helm/lambda.zip
       - functions/packages/DeleteBucketContents/lambda.zip
       - functions/packages/CfnStackAssumeRole/lambda.zip
@@ -73,7 +72,6 @@ Resources:
       Region: !Ref "AWS::Region"
       LambdaFunctionNames:
       - !Ref KubeManifestLambda
-      - !Ref TillerInstallLambda
   VPCLambdaCleanupLambdaFunction:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
@@ -112,21 +110,6 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CfnStackAssumeRole/lambda.zip'
-  TillerInstallLambda:
-    DependsOn: CopyZips
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: lambda_function.lambda_handler
-      MemorySize: 128
-      Role: !Ref EKSProvisionRoleArn
-      Runtime: python3.6
-      Timeout: 900
-      Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/TillerInstall/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref EKSSubnetIds
   HelmLambda:
     DependsOn: CopyZips
     Type: AWS::Lambda::Function
@@ -243,8 +226,6 @@ Resources:
                   timer.cancel()
                   cfnresponse.send(event, context, status, {}, physical_resource_id)
 Outputs:
-  TillerInstallLambdaArn:
-    Value: !GetAtt TillerInstallLambda.Arn
   HelmLambdaArn:
     Value: !GetAtt HelmLambda.Arn
   QuickStartStackMakerLambdaArn:

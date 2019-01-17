@@ -541,9 +541,25 @@ function install_kubernetes_client_tools() {
     qs_retry_command 10 curl -o helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.12.2-linux-amd64.tar.gz
     tar -xvf helm.tar.gz
     chmod +x ./linux-amd64/helm
-    mv ./linux-amd64/helm /usr/local/bin/
+    chmod +x ./linux-amd64/tiller
+    mv ./linux-amd64/helm /usr/local/bin/helm-client
+    mv ./linux-amd64/tiller /usr/local/bin/
     rm -rf ./linux-amd64/
-    su ec2-user -c "helm init --client-only"
+    touch /var/log/tiller.log
+    chown ec2-user:ec2-user /var/log/tiller.log
+    cat > /usr/local/bin/helm <<"EOF"
+#!/bin/bash
+/usr/local/bin/tiller -listen 127.0.0.1:44134 -alsologtostderr -storage secret &>> /var/log/tiller.log &
+# Give tiller a moment to come up
+sleep 2
+export HELM_HOST=127.0.0.1:44134
+/usr/local/bin/helm-client "$@"
+EXIT_CODE=$?
+kill %1
+exit ${EXIT_CODE}
+EOF
+    chmod +x /usr/local/bin/helm
+    su ec2-user -c "/usr/local/bin/helm init --client-only"
 }
 
 ##################################### End Function Definitions

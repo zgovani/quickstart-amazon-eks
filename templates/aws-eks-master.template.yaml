@@ -273,10 +273,10 @@ Resources:
         PublicSubnetTag2: !Sub "kubernetes.io/cluster/${AWS::StackName}-${AWS::Region}=owned"
         PublicSubnetTag3: "kubernetes.io/role/elb="
         VPCCIDR: !Ref 'VPCCIDR'
-  WorkloadStack:
+  EKSStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-master-existing-vpc.template.yaml'
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks.template.yaml'
       Parameters:
         PublicSubnet1ID: !GetAtt VPCStack.Outputs.PublicSubnet1ID
         PublicSubnet2ID: !GetAtt VPCStack.Outputs.PublicSubnet2ID
@@ -297,12 +297,12 @@ Resources:
         KubernetesVersion: !Ref KubernetesVersion
 Outputs:
   KubeConfigPath:
-    Value: !GetAtt WorkloadStack.Outputs.KubeConfigPath
+    Value: !GetAtt EKSStack.Outputs.KubeConfigPath
   HelmLambdaArn:
-    Value: !GetAtt WorkloadStack.Outputs.HelmLambdaArn
+    Value: !GetAtt EKSStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:
-    Value: !GetAtt WorkloadStack.Outputs.KubeManifestLambdaArn
+    Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
   BastionIP:
-    Value: !GetAtt WorkloadStack.Outputs.BastionIP
+    Value: !GetAtt EKSStack.Outputs.BastionIP
   EKSClusterName:
-    Value: !GetAtt WorkloadStack.Outputs.EKSClusterName
+    Value: !GetAtt EKSStack.Outputs.EKSClusterName
