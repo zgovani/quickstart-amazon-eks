@@ -182,6 +182,8 @@ Parameters:
     Type: "AWS::EC2::Subnet::Id"
   PublicSubnet2ID:
     Type: "AWS::EC2::Subnet::Id"
+  PublicSubnet3ID:
+    Type: "AWS::EC2::Subnet::Id"
   PrivateSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
   PrivateSubnet2ID:
@@ -200,6 +202,7 @@ Resources:
       Parameters:
         PublicSubnet1ID: !Ref PublicSubnet1ID
         PublicSubnet2ID: !Ref PublicSubnet2ID
+        PublicSubnet3ID: !Ref PublicSubnet3ID
         KeyPairName: !Ref KeyPairName
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
