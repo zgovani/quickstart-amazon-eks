@@ -115,7 +115,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
-      MemorySize: 128
+      MemorySize: 512
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
       Timeout: 900
