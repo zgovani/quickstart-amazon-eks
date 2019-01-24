@@ -344,3 +344,11 @@ Outputs:
     Value: !GetAtt EKSControlPlane.EKSName
   NodeGroupIAMRole:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName
+  ControlPlaneSecurityGroup:
+    Value: !Ref ControlPlaneSecurityGroup
+  NodeGroupSecurityGroup:
+    Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
+  NodeInstanceRoleArn:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
+  NodeInstanceRoleName:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName
