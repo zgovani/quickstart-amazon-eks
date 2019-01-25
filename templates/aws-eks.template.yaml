@@ -342,10 +342,12 @@ Outputs:
     Value: !GetAtt BastionStack.Outputs.EIP1
   EKSClusterName:
     Value: !GetAtt EKSControlPlane.EKSName
-  NodeGroupIAMRole:
+  NodeInstanceProfile:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceProfile
+  NodeInstanceRoleName:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName
   ControlPlaneSecurityGroup:
-    Value: !Ref ControlPlaneSecurityGroup
+    Value: !GetAtt ControlPlaneSecurityGroup.GroupId
   NodeGroupSecurityGroup:
     Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
   NodeInstanceRoleArn:
