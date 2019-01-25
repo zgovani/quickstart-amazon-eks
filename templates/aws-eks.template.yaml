@@ -338,6 +338,8 @@ Outputs:
     Value: !GetAtt FunctionStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
+  KubeGetLambdaArn:
+    Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
   BastionIP:
     Value: !GetAtt BastionStack.Outputs.EIP1
   EKSClusterName:
@@ -352,5 +354,3 @@ Outputs:
     Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
   NodeInstanceRoleArn:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
-  NodeInstanceRoleName:
-    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName

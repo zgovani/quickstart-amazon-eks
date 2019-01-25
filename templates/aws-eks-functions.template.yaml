@@ -63,6 +63,7 @@ Resources:
       - functions/packages/DeleteBucketContents/lambda.zip
       - functions/packages/CfnStackAssumeRole/lambda.zip
       - functions/packages/KubeManifest/lambda.zip
+      - functions/packages/KubeGet/lambda.zip
       - functions/packages/LambdaEniCleanup/lambda.zip
       - functions/packages/KubeConfigUpload/lambda.zip
   VPCLambdaCleanup:
@@ -137,6 +138,21 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
+      VpcConfig:
+        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
+        SubnetIds: !Ref EKSSubnetIds
+  KubeGetLambda:
+    DependsOn: CopyZips
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 256
+      Role: !Ref EKSProvisionRoleArn
+      Runtime: python3.6
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeGet/lambda.zip'
       VpcConfig:
         SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
         SubnetIds: !Ref EKSSubnetIds
@@ -234,5 +250,7 @@ Outputs:
     Value: !If [ CreateDeleteBucketContentsLambda, !GetAtt DeleteBucketContentsLambda.Arn, "" ]
   KubeManifestLambdaArn:
     Value: !GetAtt KubeManifestLambda.Arn
+  KubeGetLambdaArn:
+    Value: !GetAtt KubeGetLambda.Arn
   KubeConfigUploadLambdaArn:
     Value: !GetAtt KubeConfigUploadLambda.Arn
