@@ -194,6 +194,10 @@ Parameters:
     Type: String
     AllowedValues: [ "1.11", "1.10" ]
     Default: "1.11"
+  BootstrapArguments:
+    Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami
+    Type: String
+    Default: ""
 Conditions:
   CreateLambdaZipsBucket: !Equals
   - !Ref 'LambdaZipsBucketName'
@@ -236,6 +240,7 @@ Resources:
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
         KubernetesVersion: !Ref KubernetesVersion
+        BootstrapArguments: !Ref BootstrapArguments
   IamStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:

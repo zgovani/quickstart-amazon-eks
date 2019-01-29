@@ -322,7 +322,7 @@ Resources:
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for all nodes in the cluster
+      GroupDescription: Security group for all nodes in the node group
       VpcId: !Ref VPCID
       Tags:
       - Key: !Sub "kubernetes.io/cluster/${EKSControlPlane}"
@@ -330,7 +330,7 @@ Resources:
   NodeSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: Allow node to communicate with each other
+      Description: Allow nodes to communicate with each other
       GroupId: !Ref NodeSecurityGroup
       SourceSecurityGroupId: !Ref NodeSecurityGroup
       IpProtocol: '-1'
