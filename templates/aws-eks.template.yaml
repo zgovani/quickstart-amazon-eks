@@ -3,26 +3,26 @@ Description: Deploys an EKS cluster into an existing VPC (qs-1p7nknoi6)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-    - Label:
-        default: Network Configuration
-      Parameters:
-      - RemoteAccessCIDR
-    - Label:
-        default: Amazon EC2 Configuration
-      Parameters:
-      - KeyPairName
-    - Label:
-        default: EKS Configuration
-      Parameters:
-      - NodeInstanceType
-      - NumberOfNodes
-      - NodeGroupName
-      - NodeVolumeSize
-    - Label:
-        default: AWS Quick Start Configuration
-      Parameters:
-      - QSS3BucketName
-      - QSS3KeyPrefix
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - RemoteAccessCIDR
+      - Label:
+          default: Amazon EC2 Configuration
+        Parameters:
+          - KeyPairName
+      - Label:
+          default: EKS Configuration
+        Parameters:
+          - NodeInstanceType
+          - NumberOfNodes
+          - NodeGroupName
+          - NodeVolumeSize
+      - Label:
+          default: AWS Quick Start Configuration
+        Parameters:
+          - QSS3BucketName
+          - QSS3KeyPrefix
     ParameterLabels:
       KeyPairName:
         default: SSH Key Name
@@ -76,86 +76,86 @@ Parameters:
   NodeInstanceType:
     Default: t2.medium
     AllowedValues:
-    - t2.small
-    - t2.medium
-    - t2.large
-    - t2.xlarge
-    - t2.2xlarge
-    - t3.nano
-    - t3.micro
-    - t3.small
-    - t3.medium
-    - t3.large
-    - t3.xlarge
-    - t3.2xlarge
-    - m3.medium
-    - m3.large
-    - m3.xlarge
-    - m3.2xlarge
-    - m4.large
-    - m4.xlarge
-    - m4.2xlarge
-    - m4.4xlarge
-    - m4.10xlarge
-    - m5.large
-    - m5.xlarge
-    - m5.2xlarge
-    - m5.4xlarge
-    - m5.12xlarge
-    - m5.24xlarge
-    - c4.large
-    - c4.xlarge
-    - c4.2xlarge
-    - c4.4xlarge
-    - c4.8xlarge
-    - c5.large
-    - c5.xlarge
-    - c5.2xlarge
-    - c5.4xlarge
-    - c5.9xlarge
-    - c5.18xlarge
-    - i3.large
-    - i3.xlarge
-    - i3.2xlarge
-    - i3.4xlarge
-    - i3.8xlarge
-    - i3.16xlarge
-    - r3.xlarge
-    - r3.2xlarge
-    - r3.4xlarge
-    - r3.8xlarge
-    - r4.large
-    - r4.xlarge
-    - r4.2xlarge
-    - r4.4xlarge
-    - r4.8xlarge
-    - r4.16xlarge
-    - x1.16xlarge
-    - x1.32xlarge
-    - p2.xlarge
-    - p2.8xlarge
-    - p2.16xlarge
-    - p3.2xlarge
-    - p3.8xlarge
-    - p3.16xlarge
-    - r5.large
-    - r5.xlarge
-    - r5.2xlarge
-    - r5.4xlarge
-    - r5.12xlarge
-    - r5.24xlarge
-    - r5d.large
-    - r5d.xlarge
-    - r5d.2xlarge
-    - r5d.4xlarge
-    - r5d.12xlarge
-    - r5d.24xlarge
-    - z1d.large
-    - z1d.xlarge
-    - z1d.2xlarge
-    - z1d.3xlarge
-    - z1d.6xlarge
-    - z1d.12xlarge
+      - t2.small
+      - t2.medium
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.18xlarge
+      - i3.large
+      - i3.xlarge
+      - i3.2xlarge
+      - i3.4xlarge
+      - i3.8xlarge
+      - i3.16xlarge
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - r4.large
+      - r4.xlarge
+      - r4.2xlarge
+      - r4.4xlarge
+      - r4.8xlarge
+      - r4.16xlarge
+      - x1.16xlarge
+      - x1.32xlarge
+      - p2.xlarge
+      - p2.8xlarge
+      - p2.16xlarge
+      - p3.2xlarge
+      - p3.8xlarge
+      - p3.16xlarge
+      - r5.large
+      - r5.xlarge
+      - r5.2xlarge
+      - r5.4xlarge
+      - r5.12xlarge
+      - r5.24xlarge
+      - r5d.large
+      - r5d.xlarge
+      - r5d.2xlarge
+      - r5d.4xlarge
+      - r5d.12xlarge
+      - r5d.24xlarge
+      - z1d.large
+      - z1d.xlarge
+      - z1d.2xlarge
+      - z1d.3xlarge
+      - z1d.6xlarge
+      - z1d.12xlarge
     ConstraintDescription: Must be a valid EC2 instance type
     Description: Type of EC2 instance for the Node instances
     Type: String
@@ -198,10 +198,14 @@ Parameters:
     Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami
     Type: String
     Default: ""
+  BastionOS:
+    Type: String
+    AllowedValues: [ "Amazon-Linux-HVM", "CentOS-7-HVM", "Ubuntu-Server-14.04-LTS-HVM", "Ubuntu-Server-16.04-LTS-HVM", "SUSE-SLES-15-HVM" ]
+    Default: "Amazon-Linux-HVM"
 Conditions:
   CreateLambdaZipsBucket: !Equals
-  - !Ref 'LambdaZipsBucketName'
-  - ''
+    - !Ref 'LambdaZipsBucketName'
+    - ''
 Resources:
   BastionStack:
     Type: AWS::CloudFormation::Stack
@@ -217,6 +221,7 @@ Resources:
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
         AlternativeInitializationScript: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
         AlternativeIAMRole: !GetAtt IamStack.Outputs.BastionRole
+        BastionAMIOS: !Ref BastionOS
         EnvironmentVariables: !Sub >
           K8S_ROLE_ARN=${IamStack.Outputs.ControlPlaneProvisionRoleArn},
           K8S_CLUSTER_NAME=${EKSControlPlane.EKSName},
@@ -311,27 +316,27 @@ Resources:
         "Version": "2012-10-17",
         "Id": "key-default-1",
         "Statement": [
-          {
-            "Sid": "root access",
-            "Effect": "Allow",
-            "Principal": {"AWS": !Sub "arn:aws:iam::${AWS::AccountId}:root"},
-            "Action": "kms:*",
-            "Resource": "*"
-          },
-          {
-            "Sid": "lambda encrypt",
-            "Effect": "Allow",
-            "Principal": {"AWS": !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn},
-            "Action": "kms:encrypt",
-            "Resource": "*"
-          },
-          {
-            "Sid": "lambda decrypt",
-            "Effect": "Allow",
-            "Principal": {"AWS": !GetAtt IamStack.Outputs.ControlPlaneProvisionRoleArn},
-            "Action": "kms:decrypt",
-            "Resource": "*"
-          }
+        {
+          "Sid": "root access",
+          "Effect": "Allow",
+          "Principal": {"AWS": !Sub "arn:aws:iam::${AWS::AccountId}:root"},
+          "Action": "kms:*",
+          "Resource": "*"
+        },
+        {
+          "Sid": "lambda encrypt",
+          "Effect": "Allow",
+          "Principal": {"AWS": !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn},
+          "Action": "kms:encrypt",
+          "Resource": "*"
+        },
+        {
+          "Sid": "lambda decrypt",
+          "Effect": "Allow",
+          "Principal": {"AWS": !GetAtt IamStack.Outputs.ControlPlaneProvisionRoleArn},
+          "Action": "kms:decrypt",
+          "Resource": "*"
+        }
         ]
       }
   KubeConfigBucket:
