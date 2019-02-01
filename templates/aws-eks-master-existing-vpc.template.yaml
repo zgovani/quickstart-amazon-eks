@@ -4,42 +4,72 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Network Configuration
+          default: Network configuration
         Parameters:
+          - VPCID
+          - PrivateSubnet1ID
+          - PrivateSubnet2ID
+          - PrivateSubnet3ID
+          - PublicSubnet1ID
+          - PublicSubnet2ID
+          - PublicSubnet3ID
           - RemoteAccessCIDR
       - Label:
-          default: Amazon EC2 Configuration
+          default: Amazon EC2 configuration
         Parameters:
           - KeyPairName
       - Label:
-          default: EKS Configuration
+          default: EKS configuration
         Parameters:
           - NodeInstanceType
           - NumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
+          - AdditionalEKSAdminArns
+          - KubernetesVersion
       - Label:
-          default: AWS Quick Start Configuration
+          default: AWS Quick Start configuration
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
+          - LambdaZipsBucketName
     ParameterLabels:
       KeyPairName:
-        default: SSH Key Name
+        default: SSH key name
       QSS3BucketName:
-        default: Quick Start S3 Bucket Name
+        default: Quick Start S3 bucket name
       QSS3KeyPrefix:
-        default: Quick Start S3 Key Prefix
+        default: Quick Start S3 key prefix
       RemoteAccessCIDR:
-        default: Allowed External Access CIDR
+        default: Allowed external access CIDR
       NodeInstanceType:
-        default: Nodes Instance Type
+        default: Nodes instance type
       NumberOfNodes:
-        default: Number of Nodes
+        default: Number of nodes
       NodeGroupName:
-        default: Node Group Name
+        default: Node group name
       NodeVolumeSize:
-        default: Node Volume Size
+        default: Node volume size
+      PublicSubnet1ID:
+        default: Public subnet 1 ID
+      PublicSubnet2ID:
+        default: Public subnet 2 ID
+      PublicSubnet3ID:
+        default: Public subnet 3 ID
+      PrivateSubnet1ID:
+        default: Private subnet 1 ID
+      PrivateSubnet2ID:
+        default: Private subnet 2 ID
+      PrivateSubnet3ID:
+        default: Private subnet 3 ID
+      VPCID:
+        default: VPC ID
+      AdditionalEKSAdminArns:
+        default: Additional EKS admin ARNs
+      KubernetesVersion:
+        default: Kubernetes version
+      LambdaZipsBucketName:
+        default: Lambda zips bucket name
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -71,7 +101,7 @@ Parameters:
     Type: String
   AdditionalEKSAdminArns:
     Default: ""
-    Description: "[OPTIONAL] Comma separated list of IAM users/roles to be granted admin access to the EKS cluster"
+    Description: "[OPTIONAL] Comma separated list of IAM user/role ARNs to be granted admin access to the EKS cluster"
     Type: CommaDelimitedList
   NodeInstanceType:
     Default: t2.medium
@@ -169,31 +199,38 @@ Parameters:
     Type: String
   NodeVolumeSize:
     Default: 20
-    Description: Size for node volumes
+    Description: Size for node root EBS volumes
     Type: String
   LambdaZipsBucketName:
-    Description: 'OPTIONAL: Bucket Name where the lambda zip files should be placed,
-        if left blank a bucket will be created.'
+    Description: 'OPTIONAL: Bucket Name where the lambda zip files should be placed, if left blank a bucket will be created.'
     Type: String
     Default: ''
   VPCID:
     Type: "AWS::EC2::VPC::Id"
+    Description: The ID of your existing VPC (e.g., vpc-0343606e)
   PublicSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the public subnet in Availability Zone 1 in your existing VPC (e.g., subnet-a0246dcd)
   PublicSubnet2ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the public subnet in Availability Zone 2 in your existing VPC (e.g., subnet-b1236eea)
   PublicSubnet3ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the public subnet in Availability Zone 3 in your existing VPC (e.g., subnet-c3456aba)
   PrivateSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the private subnet in Availability Zone 1 in your existing VPC (e.g., subnet-fe9a8b32)
   PrivateSubnet2ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the private subnet in Availability Zone 2 in your existing VPC (e.g., subnet-be8b01ea)
   PrivateSubnet3ID:
     Type: "AWS::EC2::Subnet::Id"
+    Description: The ID of the private subnet in Availability Zone 3 in your existing VPC (e.g., subnet-abd39039)
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.11", "1.10" ]
     Default: "1.11"
+    Description: Configures the version of kubernetes deployed in the Amazon EKS control plane
 Resources:
   EKSStack:
     Type: AWS::CloudFormation::Stack
