@@ -221,6 +221,14 @@ Resources:
       - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
       - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
       - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Policies:
+      - PolicyName: QSBucketAccess
+        PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub "arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*"
   BastionRole:
     Type: "AWS::IAM::Role"
     Properties:

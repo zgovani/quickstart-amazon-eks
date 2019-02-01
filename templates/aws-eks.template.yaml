@@ -11,6 +11,7 @@ Metadata:
           default: Amazon EC2 Configuration
         Parameters:
           - KeyPairName
+          - NodeAMIOS
       - Label:
           default: EKS Configuration
         Parameters:
@@ -27,6 +28,8 @@ Metadata:
     ParameterLabels:
       KeyPairName:
         default: SSH Key Name
+      NodeAMIOS:
+        default: Node AMI Operating System
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
       QSS3KeyPrefix:
@@ -48,6 +51,14 @@ Parameters:
     Description: The name of an existing public/private key pair, which allows you
       to securely connect to your instance after it launches
     Type: AWS::EC2::KeyPair::KeyName
+  NodeAMIOS:
+    AllowedValues:
+      - Amazon-Linux-HVM
+      - SUSE-SLES-15-HVM
+    Default: Amazon-Linux-HVM
+    Description: The Linux distribution for the AMI to be used for the node
+      instances.
+    Type: String
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -240,6 +251,7 @@ Resources:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-nodegroup.template.yaml'
       Parameters:
         KeyPairName: !Ref 'KeyPairName'
+        NodeAMIOS: !Ref NodeAMIOS
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
         PrivateSubnet2ID: !Ref PrivateSubnet2ID
         PrivateSubnet3ID: !Ref PrivateSubnet3ID
@@ -251,8 +263,11 @@ Resources:
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
+        NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
         KubernetesVersion: !Ref KubernetesVersion
         BootstrapArguments: !Ref BootstrapArguments
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
   IamStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
