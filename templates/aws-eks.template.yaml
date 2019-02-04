@@ -23,6 +23,7 @@ Metadata:
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
+          - KubeConfigKmsContext
     ParameterLabels:
       KeyPairName:
         default: SSH Key Name
@@ -40,6 +41,8 @@ Metadata:
         default: Node Group Name
       NodeVolumeSize:
         default: Node Volume Size
+      KubeConfigKmsContext:
+        default: KMS Context
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -202,6 +205,10 @@ Parameters:
     Type: String
     AllowedValues: [ "Amazon-Linux-HVM", "CentOS-7-HVM", "Ubuntu-Server-14.04-LTS-HVM", "Ubuntu-Server-16.04-LTS-HVM", "SUSE-SLES-15-HVM" ]
     Default: "Amazon-Linux-HVM"
+  KubeConfigKmsContext:
+    Description: Context used to encrypt and decrypt kubeconfig file
+    Type: String
+    Default: "EKSQuickStart"
 Conditions:
   CreateLambdaZipsBucket: !Equals
     - !Ref 'LambdaZipsBucketName'
@@ -309,6 +316,7 @@ Resources:
         KubeConfigS3Bucket: !Ref KubeConfigBucket
         AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
         KubernetesVersion: !Ref KubernetesVersion
+        KmsContext: !Ref KubeConfigKmsContext
   KmsKey:
     Type: "AWS::KMS::Key"
     Properties:
