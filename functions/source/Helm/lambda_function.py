@@ -127,6 +127,12 @@ def get_config_details(event):
     return bucket, key, kms_context
 
 
+def write_values(manifest, path):
+    f = open(path, "w")
+    f.write(manifest)
+    f.close()
+
+
 def lambda_handler(event, context):
     # make sure we send a failure to CloudFormation if the function is going to timeout
     timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
@@ -154,11 +160,15 @@ def lambda_handler(event, context):
             run_command("kubectl config set-context %s --namespace=%s" % (k8s_context, namespace))
         run_command("helm --home /tmp/.helm repo update")
         if event['RequestType'] == 'Create':
+            val_file = ""
+            if "ValueYaml" in event['ResourceProperties']:
+                write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
+                val_file = "-f /tmp/values.yaml"
             set_vals = ""
             if "Values" in event['ResourceProperties']:
                 values = event['ResourceProperties']['Values']
                 set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
-            cmd = "helm --home /tmp/.helm install %s %s --wait" % (event['ResourceProperties']['Chart'], set_vals)
+            cmd = "helm --home /tmp/.helm install %s %s %s --wait" % (event['ResourceProperties']['Chart'], val_file, set_vals)
             output = run_command(cmd)
             response_data = parse_install_output(output)
             physical_resource_id = response_data["Name"]
