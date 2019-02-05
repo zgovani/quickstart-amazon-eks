@@ -311,12 +311,12 @@ def create(event, context):
     params = get_cfn_parameters(event)
     prefix = event['ResourceProperties']['ParentStackId'].split("/")[1]
     suffix = "-" + event["LogicalResourceId"] + "-" + rand_string(13)
+    parent_properties = cfn_client.describe_stacks(StackName=prefix)['Stacks'][0]
     prefix_length = len(prefix)
     suffix_length = len(suffix)
     if prefix_length + suffix_length > 128:
         prefix = prefix[:128-suffix_length]
     stack_name = prefix + suffix
-    parent_properties = cfn_client.describe_stacks(StackName=prefix)['Stacks'][0]
     response = cfn_client.create_stack(
         StackName=stack_name,
         TemplateURL=event['ResourceProperties']['TemplateURL'],
