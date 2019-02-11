@@ -209,12 +209,21 @@ Parameters:
     Description: Context used to encrypt and decrypt kubeconfig file
     Type: String
     Default: "EKSQuickStart"
+  ProvisionBastionHost:
+    Description: Enable or disable the creation of a Bastion host in the first public subnet
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Enabled"
 Conditions:
   CreateLambdaZipsBucket: !Equals
     - !Ref 'LambdaZipsBucketName'
     - ''
+  EnableBastion: !Equals
+    - !Ref 'ProvisionBastionHost'
+    - 'Enabled'
 Resources:
   BastionStack:
+    Condition: EnableBastion
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}submodules/quickstart-linux-bastion/templates/linux-bastion.template'
@@ -359,7 +368,10 @@ Outputs:
   KubeGetLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
   BastionIP:
-    Value: !GetAtt BastionStack.Outputs.EIP1
+    Value: !If
+    - EnableBastion
+    - !GetAtt BastionStack.Outputs.EIP1
+    - ""
   EKSClusterName:
     Value: !GetAtt EKSControlPlane.EKSName
   NodeInstanceProfile:
