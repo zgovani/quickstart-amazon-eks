@@ -1,8 +1,7 @@
-# quickstart-aws-eks
+# Re-using Amazon EKS Quick Start as a component in your own project
 
-This is a work in progress framework for building quick starts on kubernetes. 
-
-Aims to provide:
+This Quick Start is designed as a framework for deploying kubernetes based applications into Amazon EKS using AWS 
+CloudFormation. It can be used to provide:
 
 * 3 possible entry points: 
   * new vpc and EKS cluster
@@ -31,7 +30,7 @@ the master stack
  
 ## Using as submodule
 
-You can use the `aws-eks-master.template.yaml` and `aws-eks-master-existing-vpc.template.yaml` files as a starting point 
-for building your own templates, updating the paths in both to point to the eks submodule for all needed templates and 
-adding a workload template to `aws-eks-master-existing-vpc.template.yaml` (can use `example-workload.template.yaml` as a 
-starting point for this).
+You can use the `aws-eks-master.template.yaml`, `aws-eks-master-existing-vpc.template.yaml` and 
+`aws-eks-master-existing-cluster.template.yaml` files as a starting point for building your own templates, updating the 
+paths in both to point to the eks submodule for all needed templates and adding a workload template to 
+`aws-eks-master-existing-vpc.template.yaml` (can use `example-workload.template.yaml` as a starting point for this).
