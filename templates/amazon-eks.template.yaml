@@ -14,7 +14,7 @@ Parameters:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
       uppercase letters, hyphens (-), and forward slash (/).
-    Default: quickstart-aws-eks/
+    Default: quickstart-amazon-eks/
     Type: String
   RemoteAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
@@ -184,7 +184,7 @@ Resources:
   NodeGroupStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-nodegroup.template.yaml'
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-nodegroup.template.yaml'
       Parameters:
         KeyPairName: !Ref 'KeyPairName'
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
@@ -203,7 +203,7 @@ Resources:
   IamStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-iam.template.yaml'
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-iam.template.yaml'
       Parameters:
         LambdaZipsBucketName: !If [ CreateLambdaZipsBucket, !Ref LambdaZipsBucket, !Ref LambdaZipsBucketName ]
         DeleteLambdaZipsBucketContents: !If [ CreateLambdaZipsBucket, "True", "False" ]
@@ -213,7 +213,7 @@ Resources:
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-functions.template.yaml'
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazom-eks-functions.template.yaml'
       Parameters:
         LambdaZipsBucketName: !If [ CreateLambdaZipsBucket, !Ref LambdaZipsBucket, !Ref LambdaZipsBucketName ]
         QSS3BucketName: !Ref QSS3BucketName
@@ -249,7 +249,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt FunctionStack.Outputs.QuickStartStackMakerLambdaArn
       RoleArn: !GetAtt IamStack.Outputs.ControlPlaneProvisionRoleArn
-      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/aws-eks-controlplane.template.yaml'
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-controlplane.template.yaml'
       ParentStackId: !Ref AWS::StackId
       CfnParameters:
         SecurityGroupIds: !Ref ControlPlaneSecurityGroup
