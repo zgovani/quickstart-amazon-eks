@@ -1,52 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Deploys an EKS cluster into an existing VPC (qs-1p7nknoi6)
-Metadata:
-  AWS::CloudFormation::Interface:
-    ParameterGroups:
-      - Label:
-          default: Network Configuration
-        Parameters:
-          - RemoteAccessCIDR
-      - Label:
-          default: Amazon EC2 Configuration
-        Parameters:
-          - KeyPairName
-      - Label:
-          default: EKS Configuration
-        Parameters:
-          - NodeInstanceType
-          - NumberOfNodes
-          - NodeGroupName
-          - NodeVolumeSize
-      - Label:
-          default: AWS Quick Start Configuration
-        Parameters:
-          - QSS3BucketName
-          - QSS3KeyPrefix
-          - KubeConfigKmsContext
-    ParameterLabels:
-      KeyPairName:
-        default: SSH Key Name
-      QSS3BucketName:
-        default: Quick Start S3 Bucket Name
-      QSS3KeyPrefix:
-        default: Quick Start S3 Key Prefix
-      RemoteAccessCIDR:
-        default: Allowed External Access CIDR
-      NodeInstanceType:
-        default: Nodes Instance Type
-      NumberOfNodes:
-        default: Number of Nodes
-      NodeGroupName:
-        default: Node Group Name
-      NodeVolumeSize:
-        default: Node Volume Size
-      KubeConfigKmsContext:
-        default: KMS Context
 Parameters:
   KeyPairName:
-    Description: The name of an existing public/private key pair, which allows you
-      to securely connect to your instance after it launches
     Type: AWS::EC2::KeyPair::KeyName
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
@@ -54,27 +9,19 @@ Parameters:
       letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
       (-).
     Default: aws-quickstart
-    Description: S3 bucket name for the Quick Start assets. This string can include
-      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
-      or end with a hyphen (-).
     Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
       uppercase letters, hyphens (-), and forward slash (/).
     Default: quickstart-aws-eks/
-    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
-      can include numbers, lowercase letters, uppercase letters, hyphens (-), and
-      forward slash (/).
     Type: String
   RemoteAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the instances. We recommend that you set this value to a trusted IP range.
     Type: String
   AdditionalEKSAdminArns:
     Default: ""
-    Description: "[OPTIONAL] Comma separated list of IAM users/roles to be granted admin access to the EKS cluster"
     Type: CommaDelimitedList
   NodeInstanceType:
     Default: t2.medium
@@ -160,23 +107,17 @@ Parameters:
       - z1d.6xlarge
       - z1d.12xlarge
     ConstraintDescription: Must be a valid EC2 instance type
-    Description: Type of EC2 instance for the Node instances
     Type: String
   NumberOfNodes:
     Default: 3
-    Description: Number of EKS node instances
     Type: Number
   NodeGroupName:
     Default: Default
-    Description: Name for EKS node group
     Type: String
   NodeVolumeSize:
     Default: 20
-    Description: Size for node volumes
     Type: String
   LambdaZipsBucketName:
-    Description: 'OPTIONAL: Bucket Name where the lambda zip files should be placed,
-        if left blank a bucket will be created.'
     Type: String
     Default: ''
   VPCID:
@@ -198,7 +139,6 @@ Parameters:
     AllowedValues: [ "1.11", "1.10" ]
     Default: "1.11"
   BootstrapArguments:
-    Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami
     Type: String
     Default: ""
   BastionOS:
@@ -206,11 +146,9 @@ Parameters:
     AllowedValues: [ "Amazon-Linux-HVM", "CentOS-7-HVM", "Ubuntu-Server-14.04-LTS-HVM", "Ubuntu-Server-16.04-LTS-HVM", "SUSE-SLES-15-HVM" ]
     Default: "Amazon-Linux-HVM"
   KubeConfigKmsContext:
-    Description: Context used to encrypt and decrypt kubeconfig file
     Type: String
     Default: "EKSQuickStart"
   ProvisionBastionHost:
-    Description: Enable or disable the creation of a Bastion host in the first public subnet
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
