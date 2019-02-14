@@ -35,6 +35,8 @@ Metadata:
           - QSS3KeyPrefix
           - LambdaZipsBucketName
     ParameterLabels:
+      AvailabilityZones:
+        default: Availability Zones
       KeyPairName:
         default: SSH key name
       PrivateSubnet1CIDR:
