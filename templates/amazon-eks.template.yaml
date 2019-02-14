@@ -3,6 +3,14 @@ Description: Deploys an EKS cluster into an existing VPC (qs-1p7nknoi6)
 Parameters:
   KeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
+  NodeAMIOS:
+    AllowedValues:
+      - Amazon-Linux-HVM
+      - SUSE-SLES-15-HVM
+    Default: Amazon-Linux-HVM
+    Description: The Linux distribution for the AMI to be used for the node
+      instances.
+    Type: String
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -187,6 +195,7 @@ Resources:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-nodegroup.template.yaml'
       Parameters:
         KeyPairName: !Ref 'KeyPairName'
+        NodeAMIOS: !Ref NodeAMIOS
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
         PrivateSubnet2ID: !Ref PrivateSubnet2ID
         PrivateSubnet3ID: !Ref PrivateSubnet3ID
@@ -198,8 +207,11 @@ Resources:
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
+        NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
         KubernetesVersion: !Ref KubernetesVersion
         BootstrapArguments: !Ref BootstrapArguments
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
   IamStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:

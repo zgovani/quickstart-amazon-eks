@@ -18,6 +18,7 @@ Metadata:
           default: Amazon EC2 configuration
         Parameters:
           - KeyPairName
+          - NodeAMIOS
       - Label:
           default: Amazon EKS configuration
         Parameters:
@@ -36,6 +37,8 @@ Metadata:
     ParameterLabels:
       KeyPairName:
         default: SSH key name
+      NodeAMIOS:
+        default: Node AMI Operating System
       QSS3BucketName:
         default: Quick Start S3 bucket name
       QSS3KeyPrefix:
@@ -75,6 +78,14 @@ Parameters:
     Description: The name of an existing public/private key pair, which allows you
       to securely connect to your instance after it launches
     Type: AWS::EC2::KeyPair::KeyName
+  NodeAMIOS:
+    AllowedValues:
+      - Amazon-Linux-HVM
+      - SUSE-SLES-15-HVM
+    Default: Amazon-Linux-HVM
+    Description: The Linux distribution for the AMI to be used for the node
+      instances.
+    Type: String
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -241,6 +252,7 @@ Resources:
         PublicSubnet2ID: !Ref PublicSubnet2ID
         PublicSubnet3ID: !Ref PublicSubnet3ID
         KeyPairName: !Ref KeyPairName
+        NodeAMIOS: !Ref NodeAMIOS
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
