@@ -81,7 +81,7 @@ Parameters:
     Description: ID of your existing VPC for deployment
     Type: AWS::EC2::VPC::Id
   NodeInstanceType:
-    Default: t2.medium
+    Default: t3.medium
     AllowedValues:
       - t2.small
       - t2.medium

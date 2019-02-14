@@ -32,7 +32,7 @@ Parameters:
     Default: ""
     Type: CommaDelimitedList
   NodeInstanceType:
-    Default: t2.medium
+    Default: t3.medium
     AllowedValues:
       - t2.small
       - t2.medium
