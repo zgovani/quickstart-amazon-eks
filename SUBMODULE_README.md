@@ -22,7 +22,7 @@ dependent application components
 
 1. create EC2 Keypair
 1. Set `KeyPairName` as a [global taskcat override](https://aws-quickstart.github.io/input-files.html#parm-override)
-1. deploy `aws-eks-master.template.yaml` using taskcat `cd quickstart-aws-eks ; taskcat -v -n -c ./ci/config.yml`
+1. deploy `amazon-eks-master.template.yaml` using taskcat `cd quickstart-amazon-eks ; taskcat -v -n -c ./ci/config.yml`
 1. launch example workload template `example-workload.template.yaml`, needed parameters can be retrieved from outputs of 
 the master stack
 1. ssh into bastion host, validate that example `ConfigMap` (created by kubernetes manifest) and 
@@ -30,7 +30,7 @@ the master stack
  
 ## Using as submodule
 
-You can use the `aws-eks-master.template.yaml`, `aws-eks-master-existing-vpc.template.yaml` and 
-`aws-eks-master-existing-cluster.template.yaml` files as a starting point for building your own templates, updating the 
+You can use the `amazon-eks-master.template.yaml`, `amazon-eks-master-existing-vpc.template.yaml` and 
+`amazon-eks-master-existing-cluster.template.yaml` files as a starting point for building your own templates, updating the 
 paths in both to point to the eks submodule for all needed templates and adding a workload template to 
-`aws-eks-master-existing-vpc.template.yaml` (can use `example-workload.template.yaml` as a starting point for this).
+`amazon-eks-master-existing-vpc.template.yaml` (can use `example-workload.template.yaml` as a starting point for this).

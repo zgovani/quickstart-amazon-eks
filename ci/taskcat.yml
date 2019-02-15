@@ -16,6 +16,6 @@ global:
   reporting: true
   package-lambda: true
 tests:
-  quickstart-aws-eks-defaults:
-    parameter_input: aws-eks-defaults.json
+  quickstart-amazon-eks-defaults:
+    parameter_input: amazon-eks-defaults.json
     template_file: amazon-eks-master.template.yaml
