@@ -320,6 +320,34 @@ Resources:
           - Action: "kms:encrypt"
             Effect: Allow
             Resource: "*"
+  CleanupLoadBalancersRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+      - PolicyName: LambdaRole
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action:
+            - 'logs:CreateLogGroup'
+            - 'logs:CreateLogStream'
+            - 'logs:PutLogEvents'
+            Effect: Allow
+            Resource: "arn:aws:logs:*:*:*"
+          - Action:
+            - 'elasticloadbalancing:DescribeLoadBalancers'
+            - 'elasticloadbalancing:DescribeTags'
+            - 'elasticloadbalancing:DeleteLoadBalancer'
+            Effect: Allow
+            Resource: "*"
 Outputs:
   DeleteBucketContentsRoleArn:
     Value: !If [ CreateDeleteBucketContentsRole, !GetAtt DeleteBucketContentsRole.Arn, "" ]
@@ -343,3 +371,5 @@ Outputs:
     Value: !Ref BastionRole
   KubeConfigUploadRoleArn:
     Value: !GetAtt KubeConfigUploadRole.Arn
+  CleanupLoadBalancersRoleArn:
+    Value: !GetAtt CleanupLoadBalancersRole.Arn

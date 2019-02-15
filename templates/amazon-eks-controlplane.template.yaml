@@ -13,6 +13,8 @@ Parameters:
     Type: String
   KubeConfigUploadLambdaArn:
     Type: String
+  CleanupLoadBalancersLambdaArn:
+    Type: String
   KubeConfigUploadRoleArn:
     Type: String
   KubeConfigS3Bucket:
@@ -91,6 +93,11 @@ Resources:
       S3Key: !Ref KubeConfigS3Key
       EncryptionContext: !Ref KmsContext
       KmsKeyArn: !Ref KmsKeyArn
+  CleanupLoadBalancers:
+    Type: Custom::CleanupLoadBalancers
+    Properties:
+      ServiceToken: !Ref CleanupLoadBalancersLambdaArn
+      ClusterName: !Ref EKS
 Outputs:
   EksArn:
     Value: !GetAtt EKS.Arn
