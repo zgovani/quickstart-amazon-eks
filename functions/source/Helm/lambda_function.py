@@ -168,7 +168,11 @@ def lambda_handler(event, context):
             if "Values" in event['ResourceProperties']:
                 values = event['ResourceProperties']['Values']
                 set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
-            cmd = "helm --home /tmp/.helm install %s %s %s --wait" % (event['ResourceProperties']['Chart'], val_file, set_vals)
+            wait = "--wait"
+            if "Async" in event['ResourceProperties'].keys():
+                if event['ResourceProperties']["Async"].lower() == "true":
+                    wait = ""
+            cmd = "helm --home /tmp/.helm install %s %s %s %s" % (event['ResourceProperties']['Chart'], val_file, set_vals, wait)
             output = run_command(cmd)
             response_data = parse_install_output(output)
             physical_resource_id = response_data["Name"]
@@ -176,12 +180,20 @@ def lambda_handler(event, context):
             pass
         if event['RequestType'] == 'Delete':
             if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
-                run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
+                try:
+                    run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
+                except Exception as e:
+                    if 'release: "%s" not found' % event['PhysicalResourceId'] not in str(e):
+                        raise
+                    else:
+                        print("relase already gone, or never existed")
             else:
                 print("physical_resource_id is not a helm release, assuming there is nothing to delete")
     except Exception as e:
         logging.error('Exception: %s' % e, exc_info=True)
         status = FAILED
+        if len(str(e)) > 256:
+            e = "ERROR: (truncated) " + str(e)[len(str(e)) - 240:]
         error_message = str(e)
     finally:
         timer.cancel()
