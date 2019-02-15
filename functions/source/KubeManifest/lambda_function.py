@@ -230,7 +230,13 @@ def lambda_handler(event, context):
             response_data = build_output(json.loads(outp))
         if event['RequestType'] == 'Delete':
             if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
-                run_command("kubectl delete -f %s" % manifest_file)
+                try:
+                    run_command("kubectl delete -f %s" % manifest_file)
+                except Exception as e:
+                    if 'Error from server (NotFound)' not in str(e):
+                        raise
+                    else:
+                        print("resource already gone, or never existed")
             else:
                 print("physical_resource_id is not a kubernetes resource, assuming there is nothing to delete")
     except Exception as e:
