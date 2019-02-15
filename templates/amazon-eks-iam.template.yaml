@@ -346,6 +346,8 @@ Resources:
             - 'elasticloadbalancing:DescribeLoadBalancers'
             - 'elasticloadbalancing:DescribeTags'
             - 'elasticloadbalancing:DeleteLoadBalancer'
+            - 'ec2:DescribeTags'
+            - 'ec2:DeleteSecurityGroup'
             Effect: Allow
             Resource: "*"
 Outputs:

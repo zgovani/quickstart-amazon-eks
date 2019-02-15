@@ -51,6 +51,7 @@ def lambda_handler(event, context):
     try:
         print(json.dumps(event))
         if event['RequestType'] == 'Delete':
+            tag_key = "kubernetes.io/cluster/%s" % event["ResourceProperties"]["ClusterName"]
             lb_types = [
                 ["elb", "LoadBalancerName", "LoadBalancerNames", "LoadBalancerDescriptions", "LoadBalancerName"],
                 ["elbv2", "LoadBalancerArn", "ResourceArns", "LoadBalancers", "ResourceArn"]
@@ -70,13 +71,19 @@ def lambda_handler(event, context):
                     lbs = elb.describe_tags(**{lt[2]: lbs})["TagDescriptions"]
                     for tags in lbs:
                         for tag in tags['Tags']:
-                            if tag["Key"] == "kubernetes.io/cluster/%s" % event["ResourceProperties"]["ClusterName"] and tag['Value'] == "owned":
+                            if tag["Key"] == tag_key and tag['Value'] == "owned":
                                 lbs_to_remove.append(tags[lt[4]])
                 if lbs_to_remove:
                     for lb in lbs_to_remove:
                         print("removing elb %s" % lb)
                         elb.delete_load_balancer(**{lt[1]: lb})
-
+            ec2 = boto3.client('ec2')
+            response = ec2.describe_tags(Filters=[
+                {'Name': 'tag:%s' % tag_key, 'Values': ['owned']},
+                {'Name': 'resource-type', 'Values': ['security-group']}
+            ])
+            for t in [r['ResourceId'] for r in response['Tags']]:
+                ec2.delete_security_group(GroupId=t)
     except Exception as e:
         status = FAILED
         print(e)
