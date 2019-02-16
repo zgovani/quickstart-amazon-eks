@@ -88,6 +88,8 @@ Resources:
       Region: !Ref "AWS::Region"
       LambdaFunctionNames:
       - !Ref KubeManifestLambda
+      - !Ref HelmLambda
+      - !Ref KubeGetLambda
   VPCLambdaCleanupLambdaFunction:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
