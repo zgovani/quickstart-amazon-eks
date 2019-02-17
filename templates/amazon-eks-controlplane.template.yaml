@@ -44,7 +44,7 @@ Resources:
         SubnetIds: !Ref SubnetIds
       RoleArn: !Ref RoleArn
       Version: !Ref KubernetesVersion
-  EksNodeConfigMap:
+  EksNodeUser:
     DependsOn: KubeConfigToS3
     Type: "Custom::KubeManifest"
     Version: '1.0'
@@ -52,34 +52,22 @@ Resources:
       ServiceToken: !Ref KubeManifestLambdaArn
       KubeConfigPath: !Sub "s3://${KubeConfigS3Bucket}/${KubeConfigS3Key}"
       KubeConfigKmsContext: !Ref KmsContext
-      Manifest:
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: aws-auth
-          namespace: kube-system
-        data:
-          !If
-          - AddUsers
-          - mapUsers: !Join
-            - |
-              - username: admin
-                groups:
-                  - system:masters
-                userarn:
-            - !Ref AdditionalEKSAdminArns
-            mapRoles: !Sub |
-              - rolearn: ${NodeInstanceRoleArn}
-                username: system:node:{{EC2PrivateDNSName}}
-                groups:
-                  - system:bootstrappers
-                  - system:nodes
-          - mapRoles: !Sub |
-              - rolearn: ${NodeInstanceRoleArn}
-                username: system:node:{{EC2PrivateDNSName}}
-                groups:
-                  - system:bootstrappers
-                  - system:nodes
+      Users:
+        Arns: [ !Ref NodeInstanceRoleArn ]
+        Groups: [ 'system:bootstrappers', 'system:nodes' ]
+        Username: 'system:node:{{EC2PrivateDNSName}}'
+  AdditionalAdminUsers:
+    Condition: AddUsers
+    DependsOn: KubeConfigToS3
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref KubeManifestLambdaArn
+      KubeConfigPath: !Sub "s3://${KubeConfigS3Bucket}/${KubeConfigS3Key}"
+      KubeConfigKmsContext: !Ref KmsContext
+      Users:
+        Arns: !Ref AdditionalEKSAdminArns
+        Groups: [ "system:masters" ]
   KubeConfigToS3:
     Type: "Custom::ConfigToS3"
     Version: '1.0'

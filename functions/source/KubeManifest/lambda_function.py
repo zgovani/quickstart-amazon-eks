@@ -197,6 +197,52 @@ def fix_types(manifest):
     return traverse_modify_all(manifest, set_type)
 
 
+def aws_auth_configmap(arns, groups, username=None, remove=False):
+    new = False
+    try:
+        outp = run_command("kubectl get configmap/aws-auth -n kube-system -o yaml")
+    except Exception as e:
+        if 'configmaps "aws-auth" not found' not in str(e):
+            raise
+        new = True
+    if new:
+        aws_auth = {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {"name": "aws-auth", "namespace": "kube-system"},
+            "data": {}
+        }
+    else:
+        aws_auth = yaml.safe_load(outp)
+    maps = {"role": [], "user": []}
+    if 'mapRoles' in aws_auth['data'].keys():
+        maps['role'] = yaml.safe_load(aws_auth['data']['mapRoles'])
+    if 'mapUsers' in aws_auth['data'].keys():
+        maps['user'] = yaml.safe_load(aws_auth['data']['mapUsers'])
+    for arn in arns:
+        iam_type = arn.split(':')[5].split("/")[0]
+        if not username:
+            username = arn
+        entry = {
+            "rolearn": arn,
+            "username": username,
+            "groups": groups
+        }
+        if not remove:
+            maps[iam_type].append(entry)
+        else:
+            maps[iam_type] = [value for value in maps[iam_type] if value != entry]
+    if maps['role']:
+        aws_auth['data']['mapRoles'] = yaml.dump(maps['role'])
+    if maps['user']:
+        aws_auth['data']['mapUsers'] = yaml.dump(maps['user'])
+    print(yaml.dump(aws_auth))
+    write_manifest(aws_auth, '/tmp/aws-auth.json')
+    kw = 'create' if new else 'replace'
+    outp = run_command("kubectl %s -f /tmp/aws-auth.json --save-config" % kw)
+    print(outp)
+
+
 def lambda_handler(event, context):
     # make sure we send a failure to CloudFormation if the function is going to timeout
     timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
@@ -212,33 +258,51 @@ def lambda_handler(event, context):
             raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
         bucket, key, kms_context = get_config_details(event)
         create_kubeconfig(bucket, key, kms_context)
-        manifest_file = '/tmp/manifest.json'
-        if "PhysicalResourceId" in event.keys():
-            physical_resource_id = event["PhysicalResourceId"]
-        if type(event['ResourceProperties']['Manifest']) == str:
-            manifest = generate_name(event, physical_resource_id)
-        else:
-            manifest = fix_types(generate_name(event, physical_resource_id))
-        write_manifest(manifest, manifest_file)
-        print("Applying manifest: %s" % json.dumps(manifest))
-        if event['RequestType'] == 'Create':
-            outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
-            response_data = build_output(json.loads(outp))
-            physical_resource_id = response_data["selfLink"]
-        if event['RequestType'] == 'Update':
-            outp = run_command("kubectl apply -f %s" % manifest_file)
-            response_data = build_output(json.loads(outp))
-        if event['RequestType'] == 'Delete':
-            if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
-                try:
-                    run_command("kubectl delete -f %s" % manifest_file)
-                except Exception as e:
-                    if 'Error from server (NotFound)' not in str(e):
-                        raise
-                    else:
-                        print("resource already gone, or never existed")
+        if 'Users' in event['ResourceProperties'].keys():
+            username = None
+            if 'Username' in event['ResourceProperties']['Users'].keys():
+                username = ['ResourceProperties']['Users']['Username']
+            if event['RequestType'] == 'Delete':
+                aws_auth_configmap(
+                    event['ResourceProperties']['Users']['Arns'],
+                    event['ResourceProperties']['Users']['Groups'],
+                    username,
+                    delete=True
+                )
             else:
-                print("physical_resource_id is not a kubernetes resource, assuming there is nothing to delete")
+                aws_auth_configmap(
+                    event['ResourceProperties']['Users']['Arns'],
+                    event['ResourceProperties']['Users']['Groups'],
+                    username
+                )
+        if 'Manifest' in event['ResourceProperties'].keys():
+            manifest_file = '/tmp/manifest.json'
+            if "PhysicalResourceId" in event.keys():
+                physical_resource_id = event["PhysicalResourceId"]
+            if type(event['ResourceProperties']['Manifest']) == str:
+                manifest = generate_name(event, physical_resource_id)
+            else:
+                manifest = fix_types(generate_name(event, physical_resource_id))
+            write_manifest(manifest, manifest_file)
+            print("Applying manifest: %s" % json.dumps(manifest))
+            if event['RequestType'] == 'Create':
+                outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
+                response_data = build_output(json.loads(outp))
+                physical_resource_id = response_data["selfLink"]
+            if event['RequestType'] == 'Update':
+                outp = run_command("kubectl apply -f %s" % manifest_file)
+                response_data = build_output(json.loads(outp))
+            if event['RequestType'] == 'Delete':
+                if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
+                    try:
+                        run_command("kubectl delete -f %s" % manifest_file)
+                    except Exception as e:
+                        if 'Error from server (NotFound)' not in str(e):
+                            raise
+                        else:
+                            print("resource already gone, or never existed")
+                else:
+                    print("physical_resource_id is not a kubernetes resource, assuming there is nothing to delete")
     except Exception as e:
         logging.error('Exception: %s' % e, exc_info=True)
         status = FAILED
