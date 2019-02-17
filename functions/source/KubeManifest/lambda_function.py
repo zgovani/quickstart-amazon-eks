@@ -261,7 +261,7 @@ def lambda_handler(event, context):
         if 'Users' in event['ResourceProperties'].keys():
             username = None
             if 'Username' in event['ResourceProperties']['Users'].keys():
-                username = ['ResourceProperties']['Users']['Username']
+                username = event['ResourceProperties']['Users']['Username']
             if event['RequestType'] == 'Delete':
                 aws_auth_configmap(
                     event['ResourceProperties']['Users']['Arns'],
