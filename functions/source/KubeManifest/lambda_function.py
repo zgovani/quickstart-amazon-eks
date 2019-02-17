@@ -197,7 +197,7 @@ def fix_types(manifest):
     return traverse_modify_all(manifest, set_type)
 
 
-def aws_auth_configmap(arns, groups, username=None, remove=False):
+def aws_auth_configmap(arns, groups, username=None, delete=False):
     new = False
     try:
         outp = run_command("kubectl get configmap/aws-auth -n kube-system -o yaml")
@@ -228,7 +228,7 @@ def aws_auth_configmap(arns, groups, username=None, remove=False):
             "username": username,
             "groups": groups
         }
-        if not remove:
+        if not delete:
             maps[iam_type].append(entry)
         else:
             maps[iam_type] = [value for value in maps[iam_type] if value != entry]
