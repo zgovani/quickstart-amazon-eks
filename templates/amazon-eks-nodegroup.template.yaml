@@ -523,6 +523,10 @@ Resources:
         - Key: !Sub 'kubernetes.io/cluster/${EKSControlPlane}'
           Value: 'owned'
           PropagateAtLaunch: true
+    CreationPolicy:
+      ResourceSignal:
+        Count: !Ref NumberOfNodes
+        Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
@@ -627,8 +631,7 @@ Resources:
             DeleteOnTermination: true
       UserData: !If
           - AmznOS
-          -
-            Fn::Base64:
+          - Fn::Base64:
               !Sub |
                 #!/bin/bash
                 set -o xtrace
@@ -637,8 +640,7 @@ Resources:
                       --stack  ${AWS::StackName} \
                       --resource NodeGroup  \
                       --region ${AWS::Region}
-          -
-            Fn::Base64:
+          - Fn::Base64:
               !Sub |
                 #!/bin/bash -e
 
