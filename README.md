@@ -5,7 +5,7 @@ This Quick Start helps you to deploy a Kubernetes cluster that uses Amazon Elast
 
 Amazon EKS runs the Kubernetes management infrastructure for you across multiple AWS Availability Zones to eliminate a single point of failure. Amazon EKS is also certified Kubernetes conformant, and this reference deployment provides custom resources that enable you to deploy and manage your Kubernetes applications using AWS CloudFormation by declaring Kubernetes manifests or Helm charts directly in AWS CloudFormation templates.
 
-You can use the AWS CloudFormation templates included with the Quick Start to deploy the Citrix Virtual Apps and Desktops service and infrastructure in your AWS account in about 25 minutes. The Quick Start automates the following:
+You can use the AWS CloudFormation templates included with the Quick Start to deploy an Amazon EKS cluster in your AWS account in about 25 minutes. The Quick Start automates the following:
 
 - Deploying Amazon EKS into a new VPC
 - Deploying Amazon EKS into an existing VPC
