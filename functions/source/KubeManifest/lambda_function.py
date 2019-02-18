@@ -233,10 +233,10 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
         else:
             maps[iam_type] = [value for value in maps[iam_type] if value != entry]
     if maps['role']:
-        aws_auth['data']['mapRoles'] = yaml.dump(maps['role'])
+        aws_auth['data']['mapRoles'] = yaml.dump(maps['role'], default_flow_style=False)
     if maps['user']:
-        aws_auth['data']['mapUsers'] = yaml.dump(maps['user'])
-    print(yaml.dump(aws_auth))
+        aws_auth['data']['mapUsers'] = yaml.dump(maps['user'], default_flow_style=False)
+    print(yaml.dump(aws_auth), default_flow_style=False)
     write_manifest(aws_auth, '/tmp/aws-auth.json')
     kw = 'create' if new else 'replace'
     outp = run_command("kubectl %s -f /tmp/aws-auth.json --save-config" % kw)
