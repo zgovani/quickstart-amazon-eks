@@ -656,7 +656,7 @@ Resources:
                     --region ${AWS::Region}
                 /usr/bin/cfn-signal --exit-code $? \
                     --stack ${AWS::StackName} \
-                    --resource NodeLaunchConfig \
+                    --resource NodeGroup \
                     --region ${AWS::Region}
 Outputs:
   EKSNodeSecurityGroup:
