@@ -221,11 +221,9 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
         maps['user'] = yaml.safe_load(aws_auth['data']['mapUsers'])
     for arn in arns:
         iam_type = arn.split(':')[5].split("/")[0]
-        if not username:
-            username = arn
         entry = {
-            "rolearn": arn,
-            "username": username,
+            "%sarn" % iam_type: arn,
+            "username": username if username else arn,
             "groups": groups
         }
         if not delete:
@@ -261,7 +259,7 @@ def lambda_handler(event, context):
         if 'Users' in event['ResourceProperties'].keys():
             username = None
             if 'Username' in event['ResourceProperties']['Users'].keys():
-                username = event['ResourceProperties']['Users']['Username']
+                    username = event['ResourceProperties']['Users']['Username']
             if event['RequestType'] == 'Delete':
                 aws_auth_configmap(
                     event['ResourceProperties']['Users']['Arns'],
