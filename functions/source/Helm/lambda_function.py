@@ -133,6 +133,15 @@ def write_values(manifest, path):
     f.close()
 
 
+def truncate(response_data):
+    truncated = False
+    while len(json.dumps(response_data)) > 3000:
+        truncated = True
+        response_data.pop(list(response_data.keys())[-1])
+    response_data["Truncated"] = truncated
+    return response_data
+
+
 def lambda_handler(event, context):
     # make sure we send a failure to CloudFormation if the function is going to timeout
     timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
@@ -186,7 +195,7 @@ def lambda_handler(event, context):
                     if 'release: "%s" not found' % event['PhysicalResourceId'] not in str(e):
                         raise
                     else:
-                        print("relase already gone, or never existed")
+                        print("release already gone, or never existed")
             else:
                 print("physical_resource_id is not a helm release, assuming there is nothing to delete")
     except Exception as e:
@@ -197,4 +206,4 @@ def lambda_handler(event, context):
         error_message = str(e)
     finally:
         timer.cancel()
-        send(event, context, status, response_data, physical_resource_id, reason=error_message)
+        send(event, context, status, truncate(response_data), physical_resource_id, reason=error_message)
