@@ -192,10 +192,12 @@ def lambda_handler(event, context):
                 try:
                     run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
                 except Exception as e:
-                    if 'release: "%s" not found' % event['PhysicalResourceId'] not in str(e):
-                        raise
-                    else:
+                    if 'release: "%s" not found' % event['PhysicalResourceId'] in str(e):
                         print("release already gone, or never existed")
+                    elif 'invalid release name' in str(e):
+                        print("release name invalid, either creation failed, or response not received by CloudFormation")
+                    else:
+                        raise
             else:
                 print("physical_resource_id is not a helm release, assuming there is nothing to delete")
     except Exception as e:
