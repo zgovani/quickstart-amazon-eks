@@ -6,6 +6,7 @@ import boto3
 import subprocess
 import shlex
 import os
+import time
 
 
 SUCCESS = "SUCCESS"
@@ -117,9 +118,25 @@ def lambda_handler(event, context):
             physical_resource_id = event["PhysicalResourceId"]
         if event['RequestType'] in ['Create', 'Update']:
             name = event['ResourceProperties']['Name']
+            retry_timeout = 0
+            if "Timeout" in event['ResourceProperties']:
+                retry_timeout = int(event['ResourceProperties']["Timeout"])
+            if retry_timeout > 600:
+                retry_timeout = 600
             namespace = event['ResourceProperties']['Namespace']
             json_path = event['ResourceProperties']['JsonPath']
-            outp = run_command('kubectl get %s -o jsonpath="%s" --namespace %s' % (name, json_path, namespace))
+            while True:
+                try:
+                    outp = run_command('kubectl get %s -o jsonpath="%s" --namespace %s' % (name, json_path, namespace))
+                    break
+                except Exception as e:
+                    if retry_timeout < 1:
+                        raise
+                    else:
+                        logging.error('Exception: %s' % e, exc_info=True)
+                        print("retrying until timeout...")
+                        time.sleep(5)
+                        retry_timeout = retry_timeout - 5
             response_data = {}
             physical_resource_id = outp
     except Exception as e:
