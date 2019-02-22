@@ -7,7 +7,7 @@ import subprocess
 import shlex
 import os
 import time
-
+from hashlib import md5
 
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
@@ -138,6 +138,10 @@ def lambda_handler(event, context):
                         time.sleep(5)
                         retry_timeout = retry_timeout - 5
             response_data = {}
+            if "ResponseKey" in event['ResourceProperties']:
+                response_data[event['ResourceProperties']["ResponseKey"]] = outp
+            if len(outp.encode('utf-8')) > 1000:
+                outp = 'MD5-' + str(md5(outp.encode('utf-8')).hexdigest())
             physical_resource_id = outp
     except Exception as e:
         logging.error('Exception: %s' % e, exc_info=True)
