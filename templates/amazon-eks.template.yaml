@@ -163,11 +163,14 @@ Parameters:
   BastionBootstrapScript:
     Default: ""
     Type: String
+  BastionInstanceType:
+    Default: "t2.micro"
+    Type: String
 Conditions:
   CreateLambdaZipsBucket: !Equals
     - !Ref 'LambdaZipsBucketName'
     - ''
-  AlternativeBastionBootstrap: !Equals
+  DefaultBastionBootstrap: !Equals
     - !Ref 'BastionBootstrapScript'
     - ''
   EnableBastion: !Equals
@@ -187,10 +190,11 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
+        BastionInstanceType: !Ref BastionInstanceType
         AlternativeInitializationScript: !If
-          - AlternativeBastionBootstrap
-          - !Ref BastionBootstrapScript
+          - DefaultBastionBootstrap
           - !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
+          - !Ref BastionBootstrapScript
         AlternativeIAMRole: !GetAtt IamStack.Outputs.BastionRole
         BastionAMIOS: !Ref BastionOS
         EnvironmentVariables: !Sub >
