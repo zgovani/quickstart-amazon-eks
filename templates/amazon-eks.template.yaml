@@ -333,6 +333,11 @@ Outputs:
       - EnableBastion
       - !GetAtt BastionStack.Outputs.EIP1
       - ""
+  BastionSecurityGroup:
+    Value: !If
+      - EnableBastion
+      - !GetAtt BastionStack.Outputs.BastionSecurityGroupID
+      - ""
   EKSClusterName:
     Value: !GetAtt EKSControlPlane.EKSName
   NodeInstanceProfile:
