@@ -160,9 +160,15 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
+  BastionBootstrapScript:
+    Default: ""
+    Type: String
 Conditions:
   CreateLambdaZipsBucket: !Equals
     - !Ref 'LambdaZipsBucketName'
+    - ''
+  AlternativeBastionBootstrap: !Equals
+    - !Ref 'BastionBootstrapScript'
     - ''
   EnableBastion: !Equals
     - !Ref 'ProvisionBastionHost'
@@ -181,7 +187,10 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
-        AlternativeInitializationScript: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
+        AlternativeInitializationScript: !If
+          - AlternativeBastionBootstrap
+          - !Ref BastionBootstrapScript
+          - !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
         AlternativeIAMRole: !GetAtt IamStack.Outputs.BastionRole
         BastionAMIOS: !Ref BastionOS
         EnvironmentVariables: !Sub >
@@ -321,9 +330,9 @@ Outputs:
     Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
   BastionIP:
     Value: !If
-    - EnableBastion
-    - !GetAtt BastionStack.Outputs.EIP1
-    - ""
+      - EnableBastion
+      - !GetAtt BastionStack.Outputs.EIP1
+      - ""
   EKSClusterName:
     Value: !GetAtt EKSControlPlane.EKSName
   NodeInstanceProfile:
