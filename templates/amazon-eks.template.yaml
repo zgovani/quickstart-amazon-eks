@@ -166,16 +166,17 @@ Parameters:
   BastionInstanceType:
     Default: "t2.micro"
     Type: String
+  BastionRootVolumeSize:
+    Type: Number
+    Default: 10
+  BastionIAMRoleName:
+    Type: String
+    Default: ""
 Conditions:
-  CreateLambdaZipsBucket: !Equals
-    - !Ref 'LambdaZipsBucketName'
-    - ''
-  DefaultBastionBootstrap: !Equals
-    - !Ref 'BastionBootstrapScript'
-    - ''
-  EnableBastion: !Equals
-    - !Ref 'ProvisionBastionHost'
-    - 'Enabled'
+  CreateLambdaZipsBucket: !Equals [!Ref 'LambdaZipsBucketName', '']
+  DefaultBastionBootstrap: !Equals [!Ref 'BastionBootstrapScript', '']
+  EnableBastion: !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
+  CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
 Resources:
   BastionStack:
     Condition: EnableBastion
@@ -191,11 +192,12 @@ Resources:
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
         BastionInstanceType: !Ref BastionInstanceType
+        RootVolumeSize: !Ref BastionRootVolumeSize
         AlternativeInitializationScript: !If
           - DefaultBastionBootstrap
           - !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
           - !Ref BastionBootstrapScript
-        AlternativeIAMRole: !GetAtt IamStack.Outputs.BastionRole
+        AlternativeIAMRole: !If [CustomBastionRole, BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
         BastionAMIOS: !Ref BastionOS
         EnvironmentVariables: !Sub >
           K8S_ROLE_ARN=${IamStack.Outputs.ControlPlaneProvisionRoleArn},
@@ -235,6 +237,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         KubeConfigBucket: !Ref KubeConfigBucket
+        BastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:

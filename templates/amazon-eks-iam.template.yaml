@@ -32,10 +32,13 @@ Parameters:
   KubeConfigKey:
     Type: String
     Default: ".kube/config.enc"
+  BastionRole:
+    Type: String
+    Default: "Enabled"
+    AllowedValues: ["Enabled", "Disabled"]
 Conditions:
-  CreateDeleteBucketContentsRole: !Equals
-  - !Ref 'DeleteLambdaZipsBucketContents'
-  - "True"
+  CreateDeleteBucketContentsRole: !Equals [!Ref 'DeleteLambdaZipsBucketContents', "True"]
+  CreateBastionRole: !Equals [!Ref BastionRole, "Enabled"]
 Resources:
   DeleteBucketContentsRole:
     Condition: CreateDeleteBucketContentsRole
@@ -230,6 +233,7 @@ Resources:
               Action: s3:GetObject
               Resource: !Sub "arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*"
   BastionRole:
+    Condition: CreateBastionRole
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
@@ -370,7 +374,7 @@ Outputs:
   NodeInstanceRoleName:
     Value: !Ref NodeInstanceRole
   BastionRole:
-    Value: !Ref BastionRole
+    Value: !If [CreateBastionRole, !Ref BastionRole, ""]
   KubeConfigUploadRoleArn:
     Value: !GetAtt KubeConfigUploadRole.Arn
   CleanupLoadBalancersRoleArn:
