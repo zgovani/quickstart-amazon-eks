@@ -237,7 +237,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         KubeConfigBucket: !Ref KubeConfigBucket
-        BastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
+        CreateBastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
