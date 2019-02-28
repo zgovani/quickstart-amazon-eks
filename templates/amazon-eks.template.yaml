@@ -172,11 +172,15 @@ Parameters:
   BastionIAMRoleName:
     Type: String
     Default: ""
+  BastionVariables:
+    Type: String
+    Default: ""
 Conditions:
   CreateLambdaZipsBucket: !Equals [!Ref 'LambdaZipsBucketName', '']
   DefaultBastionBootstrap: !Equals [!Ref 'BastionBootstrapScript', '']
   EnableBastion: !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
+  AdditionalVars: !Not [!Equals [!Ref 'BastionVariables', '']]
 Resources:
   BastionStack:
     Condition: EnableBastion
@@ -199,11 +203,14 @@ Resources:
           - !Ref BastionBootstrapScript
         AlternativeIAMRole: !If [CustomBastionRole, BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
         BastionAMIOS: !Ref BastionOS
-        EnvironmentVariables: !Sub >
+        EnvironmentVariables: !Sub
+        - >
           K8S_ROLE_ARN=${IamStack.Outputs.ControlPlaneProvisionRoleArn},
           K8S_CLUSTER_NAME=${EKSControlPlane.EKSName},
           K8S_CA_DATA=${EKSControlPlane.CAData},
-          K8S_ENDPOINT=${EKSControlPlane.EKSEndpoint}
+          K8S_ENDPOINT=${EKSControlPlane.EKSEndpoint}${Joiner}
+          ${BastionVariables}
+        - Joiner: !If [AdditionalVars, ",", ""]
   NodeGroupStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
