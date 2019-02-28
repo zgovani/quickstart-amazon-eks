@@ -269,7 +269,7 @@ Rules:
     Assertions:
       - AssertDescription: Your AWS Region does *NOT* yet support Amazon EKS
         Assert: !Contains
-          -  - us-west-1
+          -  - us-west-2
              - us-east-1
              - us-east-2
              - eu-west-1
