@@ -208,9 +208,7 @@ def poll_create_update(event, context):
             logger.debug(output)
             status = json.loads(output)["status"]
             if status['phase'] == 'Pending':
-                if 'reason' in status['conditions'][0].keys():
-                    if status['conditions'][0]["reason"] == "Unschedulable":
-                        raise Exception("%s/%s Unschedulable: %s" % (k8s_type, k8s_name, status['conditions'][0]["message"]))
+                return None
             if status['phase'] != "Succeeded":
                 for s in status["containerStatuses"]:
                     if not s["ready"]:
