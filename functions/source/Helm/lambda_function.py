@@ -9,70 +9,38 @@ import os
 import string
 import random
 import re
+from crhelper import CfnResource
+import logging
+import string
 
 
-SUCCESS = "SUCCESS"
-FAILED = "FAILED"
+logger = logging.getLogger(__name__)
+helper = CfnResource(json_logging=True, log_level='DEBUG')
 
-
-s3_client = boto3.client('s3')
-kms_client = boto3.client('kms')
+try:
+    s3_client = boto3.client('s3')
+    kms_client = boto3.client('kms')
+except Exception as e:
+    helper.init_failure(e)
 
 
 def rand_string(l):
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(l))
 
 
-def send(event, context, response_status, response_data, physical_resource_id, reason=None):
-    response_url = event['ResponseURL']
-    logging.debug("CFN response URL: " + response_url)
-    response_body = dict()
-    response_body['Status'] = response_status
-    msg = 'See details in CloudWatch Log Stream: ' + context.log_stream_name
-    if not reason:
-        response_body['Reason'] = msg
-    else:
-        response_body['Reason'] = str(reason)
-    if physical_resource_id:
-        response_body['PhysicalResourceId'] = physical_resource_id
-    elif 'PhysicalResourceId' in event:
-        response_body['PhysicalResourceId'] = event['PhysicalResourceId']
-    else:
-        response_body['PhysicalResourceId'] = context.log_stream_name
-    response_body['StackId'] = event['StackId']
-    response_body['RequestId'] = event['RequestId']
-    response_body['LogicalResourceId'] = event['LogicalResourceId']
-    if response_data and response_data != {} and response_data != [] and isinstance(response_data, dict):
-        response_body['Data'] = response_data
-    json_response_body = json.dumps(response_body)
-    logging.debug("Response body:\n" + json_response_body)
-    headers = {
-        'content-type': '',
-        'content-length': str(len(json_response_body))
-    }
-    print("Returning response: %s" % json_response_body)
-    try:
-        response = requests.put(response_url, data=json_response_body, headers=headers)
-        logging.info("CloudFormation returned status code: " + response.reason)
-    except Exception as e:
-        logging.error("send(..) failed executing requests.put(..): " + str(e))
-        raise
-
-
-def timeout(event, context):
-    logging.error('Execution is about to time out, sending failure response to CloudFormation')
-    send(event, context, FAILED, {}, None)
-
-
 def run_command(command):
-    print("executing command: %s" % command)
+    logger.debug("executing command: %s" % command)
+    e = None
     try:
         output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
-        print(output)
+        logger.debug(output)
     except subprocess.CalledProcessError as exc:
-        print("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
-        raise Exception(exc.output.decode("utf-8"))
-    return output
+        logger.debug("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
+        e = Exception(exc.output.decode("utf-8"))
+    if e:
+        raise e
+    else:
+        return output
 
 
 def create_kubeconfig(bucket, key, kms_context):
@@ -100,7 +68,7 @@ def parse_install_output(output):
     resources_block = False
     for line in output.split('\n'):
         if line.startswith("NAME:"):
-                data['Name'] = line.split()[1]
+            data['Name'] = line.split()[1]
         elif line.startswith("NAMESPACE:"):
             data['Namespace'] = line.split()[1]
         elif line == 'RESOURCES:':
@@ -142,70 +110,115 @@ def truncate(response_data):
     return response_data
 
 
-def lambda_handler(event, context):
-    # make sure we send a failure to CloudFormation if the function is going to timeout
-    timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
-    timer.start()
-    print('Received event: %s' % json.dumps(event))
-    status = SUCCESS
-    error_message = None
-    response_data = {}
+def helm_init(event):
     physical_resource_id = None
-    try:
-        os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
-        if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
-            raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
-        bucket, key, kms_context = get_config_details(event)
-        create_kubeconfig(bucket, key, kms_context)
-        run_command("helm --home /tmp/.helm init --client-only")
-        repo_name = event['ResourceProperties']['Chart'].split('/')[0]
-        if "PhysicalResourceId" in event.keys():
-            physical_resource_id = event["PhysicalResourceId"]
-        if "RepoUrl" in event['ResourceProperties'].keys():
-            run_command("helm repo add %s %s --home /tmp/.helm" % (repo_name, event['ResourceProperties']["RepoUrl"]))
-        if "Namespace" in event['ResourceProperties'].keys():
-            namespace = event['ResourceProperties']["Namespace"]
-            k8s_context = run_command("kubectl config current-context")
-            run_command("kubectl config set-context %s --namespace=%s" % (k8s_context, namespace))
-        run_command("helm --home /tmp/.helm repo update")
-        if event['RequestType'] == 'Create':
-            val_file = ""
-            if "ValueYaml" in event['ResourceProperties']:
-                write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
-                val_file = "-f /tmp/values.yaml"
-            set_vals = ""
-            if "Values" in event['ResourceProperties']:
-                values = event['ResourceProperties']['Values']
-                set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
-            wait = "--wait"
-            if "Async" in event['ResourceProperties'].keys():
-                if event['ResourceProperties']["Async"].lower() == "true":
-                    wait = ""
-            cmd = "helm --home /tmp/.helm install %s %s %s %s" % (event['ResourceProperties']['Chart'], val_file, set_vals, wait)
-            output = run_command(cmd)
-            response_data = parse_install_output(output)
-            physical_resource_id = response_data["Name"]
-        if event['RequestType'] == 'Update':
-            pass
-        if event['RequestType'] == 'Delete':
-            if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
-                try:
-                    run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
-                except Exception as e:
-                    if 'release: "%s" not found' % event['PhysicalResourceId'] in str(e):
-                        print("release already gone, or never existed")
-                    elif 'invalid release name' in str(e):
-                        print("release name invalid, either creation failed, or response not received by CloudFormation")
-                    else:
-                        raise
+    os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
+    if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
+        raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
+    bucket, key, kms_context = get_config_details(event)
+    create_kubeconfig(bucket, key, kms_context)
+    run_command("helm --home /tmp/.helm init --client-only")
+    repo_name = event['ResourceProperties']['Chart'].split('/')[0]
+    if "PhysicalResourceId" in event.keys():
+        physical_resource_id = event["PhysicalResourceId"]
+    if "RepoUrl" in event['ResourceProperties'].keys():
+        run_command("helm repo add %s %s --home /tmp/.helm" % (repo_name, event['ResourceProperties']["RepoUrl"]))
+    if "Namespace" in event['ResourceProperties'].keys():
+        namespace = event['ResourceProperties']["Namespace"]
+        k8s_context = run_command("kubectl config current-context")
+        run_command("kubectl config set-context %s --namespace=%s" % (k8s_context, namespace))
+    run_command("helm --home /tmp/.helm repo update")
+    return physical_resource_id
+
+
+@helper.create
+def create(event, context):
+    helm_init(event)
+    val_file = ""
+    if "ValueYaml" in event['ResourceProperties']:
+        write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
+        val_file = "-f /tmp/values.yaml"
+    set_vals = ""
+    if "Values" in event['ResourceProperties']:
+        values = event['ResourceProperties']['Values']
+        set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
+    version = ""
+    if "Version" in event['ResourceProperties']:
+        version = "--version %s" % event['ResourceProperties']['Version']
+    cmd = "helm --home /tmp/.helm install %s %s %s %s" % (event['ResourceProperties']['Chart'], val_file, set_vals, version)
+    output = run_command(cmd)
+    response_data = parse_install_output(output)
+    physical_resource_id = response_data["Name"]
+    return physical_resource_id
+
+
+@helper.update
+def update(event, context):
+    physical_resource_id = helm_init(event)
+    val_file = ""
+    if "ValueYaml" in event['ResourceProperties']:
+        write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
+        val_file = "-f /tmp/values.yaml"
+    set_vals = ""
+    if "Values" in event['ResourceProperties']:
+        values = event['ResourceProperties']['Values']
+        set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
+    version = ""
+    if "Version" in event['ResourceProperties']:
+        version = "--version %s" % event['ResourceProperties']['Version']
+    cmd = "helm --home /tmp/.helm upgrade %s %s %s %s %s" % (physical_resource_id, event['ResourceProperties']['Chart'], val_file, set_vals, version)
+    output = run_command(cmd)
+    response_data = parse_install_output(output)
+    physical_resource_id = response_data["Name"]
+    helper.Data.update(response_data)
+    return physical_resource_id
+
+
+@helper.delete
+def delete(event, context):
+    physical_resource_id = helm_init(event)
+    if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
+        try:
+            run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
+        except Exception as e:
+            if 'release: "%s" not found' % event['PhysicalResourceId'] in str(e):
+                logger.warning("release already gone, or never existed")
+            elif 'invalid release name' in str(e):
+                logger.warning("release name invalid, either creation failed, or response not received by CloudFormation")
             else:
-                print("physical_resource_id is not a helm release, assuming there is nothing to delete")
-    except Exception as e:
-        logging.error('Exception: %s' % e, exc_info=True)
-        status = FAILED
-        if len(str(e)) > 256:
-            e = "ERROR: (truncated) " + str(e)[len(str(e)) - 240:]
-        error_message = str(e)
-    finally:
-        timer.cancel()
-        send(event, context, status, truncate(response_data), physical_resource_id, reason=error_message)
+                raise
+    else:
+        logger.warning("physical_resource_id is not a helm release, assuming there is nothing to delete")
+
+
+@helper.poll_create
+@helper.poll_update
+def poll_create_update(event, context):
+    helm_init(event)
+    release_name = helper.Data["PhysicalResourceId"]
+    cmd = "helm --home /tmp/.helm status %s" % release_name
+    output = run_command(cmd)
+    response_data = parse_install_output(output)
+    ns = event['ResourceProperties']["Namespace"]
+    for t in response_data.keys():
+        k8s_type = t.rstrip(string.digits)
+        if k8s_type.lower() in ["pod"]:
+            k8s_name = response_data[t]
+            output = run_command("kubectl get -o json -n %s %s/%s" % (ns, k8s_type, k8s_name))
+            logger.debug(output)
+            status = json.loads(output)["status"]
+            if status['phase'] == 'Pending':
+                if 'reason' in status['conditions'][0].keys():
+                    if status['conditions'][0]["reason"] == "Unschedulable":
+                        raise Exception("%s/%s Unschedulable: %s" % (k8s_type, k8s_name, status['conditions'][0]["message"]))
+            if status['phase'] != "Succeeded":
+                for s in status["containerStatuses"]:
+                    if not s["ready"]:
+                        return None
+    # Return a resource id or True to indicate that creation is complete. if True is returned an id will be generated
+    helper.Data.update(truncate(response_data))
+    return release_name
+
+
+def lambda_handler(event, context):
+    helper(event, context)
