@@ -284,7 +284,19 @@ def lambda_handler(event, context):
             write_manifest(manifest, manifest_file)
             print("Applying manifest: %s" % json.dumps(manifest))
             if event['RequestType'] == 'Create':
-                outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
+                retries = 0
+                while retries <= 5:
+                    try:
+                        outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
+                    except Exception as e:
+                        if 'Unable to connect to the server' in str(e):
+                            print("{}, retrying in 5 seconds").format(e)
+                            sleep(5)
+                            retries += 1
+                            continue
+                        else:
+                            raise
+                    break
                 response_data = build_output(json.loads(outp))
                 physical_resource_id = response_data["selfLink"]
             if event['RequestType'] == 'Update':
