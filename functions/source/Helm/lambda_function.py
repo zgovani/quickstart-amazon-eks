@@ -131,21 +131,28 @@ def helm_init(event):
     return physical_resource_id
 
 
+def build_flags(properties):
+    val_file = ""
+    if "ValueYaml" in properties:
+        write_values(properties["ValueYaml"], '/tmp/values.yaml')
+        val_file = "-f /tmp/values.yaml"
+    set_vals = ""
+    if "Values" in properties:
+        values = properties['Values']
+        set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
+    version = ""
+    if "Version" in properties:
+        version = "--version %s" % properties['Version']
+    name = ""
+    if "Name" in properties:
+        name = "--name %s" % properties['Name']
+    return "%s %s %s %s %s" % (properties['Chart'], val_file, set_vals, version, name)
+
 @helper.create
 def create(event, context):
     helm_init(event)
-    val_file = ""
-    if "ValueYaml" in event['ResourceProperties']:
-        write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
-        val_file = "-f /tmp/values.yaml"
-    set_vals = ""
-    if "Values" in event['ResourceProperties']:
-        values = event['ResourceProperties']['Values']
-        set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
-    version = ""
-    if "Version" in event['ResourceProperties']:
-        version = "--version %s" % event['ResourceProperties']['Version']
-    cmd = "helm --home /tmp/.helm install %s %s %s %s" % (event['ResourceProperties']['Chart'], val_file, set_vals, version)
+
+    cmd = "helm --home /tmp/.helm install %s" % build_flags(event['ResourceProperties'])
     output = run_command(cmd)
     response_data = parse_install_output(output)
     physical_resource_id = response_data["Name"]
@@ -155,18 +162,7 @@ def create(event, context):
 @helper.update
 def update(event, context):
     physical_resource_id = helm_init(event)
-    val_file = ""
-    if "ValueYaml" in event['ResourceProperties']:
-        write_values(event['ResourceProperties']["ValueYaml"], '/tmp/values.yaml')
-        val_file = "-f /tmp/values.yaml"
-    set_vals = ""
-    if "Values" in event['ResourceProperties']:
-        values = event['ResourceProperties']['Values']
-        set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
-    version = ""
-    if "Version" in event['ResourceProperties']:
-        version = "--version %s" % event['ResourceProperties']['Version']
-    cmd = "helm --home /tmp/.helm upgrade %s %s %s %s %s" % (physical_resource_id, event['ResourceProperties']['Chart'], val_file, set_vals, version)
+    cmd = "helm --home /tmp/.helm upgrade %s %s" % (physical_resource_id, build_flags(event['ResourceProperties']))
     output = run_command(cmd)
     response_data = parse_install_output(output)
     physical_resource_id = response_data["Name"]
