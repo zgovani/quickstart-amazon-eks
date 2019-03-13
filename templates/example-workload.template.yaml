@@ -72,10 +72,22 @@ Resources:
       #
       # supply chart name in "repo-name/chart-name" or "https://repo-hostname/repo-path/chart-package.tgz"
       Chart: svc-cat/catalog
+      # Name can be specified, if not helm will generate one
+      # Name: myRelease
+      # Version can be specified, if not latest will be used
+      # Version: 1.0.1
       # Custom values can optionally be specified
       Values:
         apiserver.healthcheck.enabled: true
         imagePullPolicy: Always
+      # If there are a lot of values, or they contain ambiguous types (eg, enable: "true" or count: "1") then values can
+      # be passed as yaml enclosed in a string literal
+      # ValueYaml: |
+      #   deep:
+      #     nested:
+      #       list:
+      #         - "true"
+      #         - "1"
 Outputs:
   # Examples for using the outputs of the KubeManifestExample resource
   ExampleUid:
