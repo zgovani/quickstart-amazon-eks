@@ -201,7 +201,7 @@ Resources:
           - DefaultBastionBootstrap
           - !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
           - !Ref BastionBootstrapScript
-        AlternativeIAMRole: !If [CustomBastionRole, BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
+        AlternativeIAMRole: !If [CustomBastionRole, !Ref BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
         BastionAMIOS: !Ref BastionOS
         EnvironmentVariables: !Sub
         - >
