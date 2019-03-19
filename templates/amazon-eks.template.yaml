@@ -352,6 +352,11 @@ Outputs:
       - EnableBastion
       - !GetAtt BastionStack.Outputs.BastionSecurityGroupID
       - ""
+  BastionAutoScalingGroup:
+    Value: !If
+      - EnableBastion
+      - !GetAtt BastionStack.Outputs.BastionAutoScalingGroup
+      - ""
   EKSClusterName:
     Value: !GetAtt EKSControlPlane.EKSName
   NodeInstanceProfile:
