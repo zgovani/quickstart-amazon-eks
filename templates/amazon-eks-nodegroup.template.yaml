@@ -20,6 +20,7 @@ Metadata:
         Parameters:
           - NodeInstanceType
           - NumberOfNodes
+          - MaxNumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
       - Label:
@@ -44,6 +45,8 @@ Metadata:
         default: Nodes Instance Type
       NumberOfNodes:
         default: Number of Nodes
+      MaxNumberOfNodes:
+        default: Maximum number of Nodes
       NodeGroupName:
         default: Node Group Name
       NodeVolumeSize:
@@ -167,8 +170,12 @@ Parameters:
     Description: Type of EC2 instance for the Node instances
     Type: String
   NumberOfNodes:
-    Default: '3'
+    Default: 3
     Description: Number of EKS node instances
+    Type: Number
+  MaxNumberOfNodes:
+    Default: 3
+    Description: The maximum number of Amazon EKS node instances.
     Type: Number
   NodeGroupName:
     Default: Default
@@ -513,7 +520,7 @@ Resources:
       DesiredCapacity: !Ref NumberOfNodes
       LaunchConfigurationName: !Ref NodeLaunchConfig
       MinSize: !Ref NumberOfNodes
-      MaxSize: !Ref NumberOfNodes
+      MaxSize: !Ref MaxNumberOfNodes
       VPCZoneIdentifier: [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]
       TargetGroupARNs: !If [ DisableTargetGroups, !Ref "AWS::NoValue", !Ref TargetGroupARNs ]
       Tags:
@@ -522,6 +529,9 @@ Resources:
           PropagateAtLaunch: true
         - Key: !Sub 'kubernetes.io/cluster/${EKSControlPlane}'
           Value: 'owned'
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: 'true'
           PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:
@@ -661,3 +671,5 @@ Resources:
 Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup
+  NodeAutoScalingGroup:
+    Value: !Ref NodeGroup
