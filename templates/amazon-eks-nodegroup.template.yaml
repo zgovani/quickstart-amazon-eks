@@ -224,6 +224,9 @@ Conditions:
   DisableTargetGroups: !Equals
     - !Join [",", !Ref 'TargetGroupARNs' ]
     - ""
+  IsSingleInstance: !Equals
+    - !Ref NumberOfNodes
+    - 1
 Mappings:
   K8sVersionMap:
     "1.11":
@@ -529,7 +532,7 @@ Resources:
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: 1
+        MinInstancesInService: !If [IsSingleInstance, 0, 1]
         MaxBatchSize: 1
         WaitOnResourceSignals : true
         PauseTime: PT15M
