@@ -23,12 +23,10 @@ Metadata:
         Parameters:
           - NodeInstanceType
           - NumberOfNodes
-          - MaxNumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
           - AdditionalEKSAdminArns
           - KubernetesVersion
-          - ProvisionClusterAutoScaler
       - Label:
           default: AWS Quick Start configuration
         Parameters:
@@ -48,8 +46,6 @@ Metadata:
         default: Nodes instance type
       NumberOfNodes:
         default: Number of nodes
-      MaxNumberOfNodes:
-        default: Maximum number of nodes
       NodeGroupName:
         default: Node group name
       NodeVolumeSize:
@@ -72,8 +68,6 @@ Metadata:
         default: Additional EKS admin ARNs
       KubernetesVersion:
         default: Kubernetes version
-      ProvisionClusterAutoScaler:
-        default: Provision Kubernetes cluster auto-scaler
       LambdaZipsBucketName:
         default: Lambda zips bucket name
 Parameters:
@@ -199,10 +193,6 @@ Parameters:
     Default: 3
     Description: The number of Amazon EKS node instances. The default is one for each of the three Availability Zones.
     Type: Number
-  MaxNumberOfNodes:
-    Default: 3
-    Description: The maximum number of Amazon EKS node instances.
-    Type: Number
   NodeGroupName:
     Default: Default
     Description: The name for EKS node group.
@@ -216,11 +206,6 @@ Parameters:
     AllowedValues: [ "1.11", "1.10" ]
     Description: The Kubernetes control plane version.
     Default: "1.11"
-  ProvisionClusterAutoScaler:
-    Description: Specifies whether the Kubernetes cluster auto-scaler is provisioned
-    Type: String
-    AllowedValues: [ "Enabled", "Disabled" ]
-    Default: "Disabled"
   LambdaZipsBucketName:
     Description: '[OPTIONAL] The name of the S3 bucket where the Lambda .zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
     Type: String
@@ -281,7 +266,7 @@ Resources:
         PrivateSubnet2ID: !Ref PrivateSubnet2ID
         PrivateSubnet3ID: !Ref PrivateSubnet3ID
         NumberOfNodes: !Ref NumberOfNodes
-        MaxNumberOfNodes: !Ref MaxNumberOfNodes
+        MaxNumberOfNodes: !Ref NumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
@@ -290,7 +275,7 @@ Resources:
         AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
         VPCID: !Ref VPCID
         KubernetesVersion: !Ref KubernetesVersion
-        ProvisionClusterAutoScaler: !Ref ProvisionClusterAutoScaler
+        ProvisionClusterAutoScaler: Disabled
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath
