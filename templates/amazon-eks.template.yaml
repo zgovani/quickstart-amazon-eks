@@ -234,6 +234,16 @@ Resources:
         BootstrapArguments: !Ref BootstrapArguments
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+  BastionSShToNodes:
+    Condition: EnableBastion
+    Type: "AWS::EC2::SecurityGroupIngress"
+    Properties:
+      Description: Allow pods to communicate with the cluster API Server
+      GroupId: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt BastionStack.Outputs.BastionSecurityGroupID
+      IpProtocol: tcp
+      ToPort: 22
+      FromPort: 22
   IamStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
