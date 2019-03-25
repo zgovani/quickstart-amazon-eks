@@ -531,6 +531,8 @@ Resources:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
         MaxBatchSize: 1
+        WaitOnResourceSignals : true
+        PauseTime: PT15M
   NodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
