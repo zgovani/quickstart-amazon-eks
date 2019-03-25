@@ -119,6 +119,9 @@ Parameters:
   NumberOfNodes:
     Default: 3
     Type: Number
+  MaxNumberOfNodes:
+    Default: 3
+    Type: Number
   NodeGroupName:
     Default: Default
     Type: String
@@ -146,6 +149,10 @@ Parameters:
     Type: String
     AllowedValues: [ "1.11", "1.10" ]
     Default: "1.11"
+  ProvisionClusterAutoScaler:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
   BootstrapArguments:
     Type: String
     Default: ""
@@ -181,6 +188,7 @@ Conditions:
   EnableBastion: !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
   AdditionalVars: !Not [!Equals [!Ref 'BastionVariables', '']]
+  EnableClusterAutoScaler: !Equals [!Ref 'ProvisionClusterAutoScaler', 'Enabled']
 Resources:
   BastionStack:
     Condition: EnableBastion
@@ -224,6 +232,7 @@ Resources:
         VPCID: !Ref VPCID
         NodeInstanceType: !Ref NodeInstanceType
         NumberOfNodes: !Ref NumberOfNodes
+        MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
@@ -274,6 +283,19 @@ Resources:
         VPCID: !Ref VPCID
         KubeConfigUploadRoleArn: !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn
         CleanupLoadBalancersRoleArn: !GetAtt IamStack.Outputs.CleanupLoadBalancersRoleArn
+  ClusterAutoScalerStack:
+    Condition: EnableClusterAutoScaler
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-cluster-autoscaler.template.yaml'
+      Parameters:
+        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
+        KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
+        KubeConfigKmsContext: !Ref KubeConfigKmsContext
+        NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
+        NodeAutoScalingGroup: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
+        EksClusterName: !GetAtt EKSControlPlane.EKSName
+        KubernetesVersion: !Ref KubernetesVersion
   LambdaZipsBucket:
     Type: AWS::S3::Bucket
     Condition: CreateLambdaZipsBucket
