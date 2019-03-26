@@ -1,12 +1,8 @@
 import json
-import logging
-import threading
-from botocore.vendored import requests
 import boto3
 import subprocess
 import shlex
 import os
-import string
 import random
 import re
 from crhelper import CfnResource
@@ -118,7 +114,8 @@ def helm_init(event):
     bucket, key, kms_context = get_config_details(event)
     create_kubeconfig(bucket, key, kms_context)
     run_command("helm --home /tmp/.helm init --client-only")
-    repo_name = event['ResourceProperties']['Chart'].split('/')[0]
+    if 'Chart' in event['ResourceProperties'].keys():
+        repo_name = event['ResourceProperties']['Chart'].split('/')[0]
     if "PhysicalResourceId" in event.keys():
         physical_resource_id = event["PhysicalResourceId"]
     if "RepoUrl" in event['ResourceProperties'].keys():
@@ -146,7 +143,14 @@ def build_flags(properties):
     name = ""
     if "Name" in properties:
         name = "--name %s" % properties['Name']
+    if "ChartBucket" in properties and "ChartKey" in properties:
+        properties['Chart'] = '/tmp/chart.tgz'
+        chart = s3_client.get_object(Bucket=properties["ChartBucket"], Key=properties["ChartKey"])['Body'].read()
+        f = open("/tmp/chart.tgz", "wb")
+        f.write(chart)
+        f.close()
     return "%s %s %s %s %s" % (properties['Chart'], val_file, set_vals, version, name)
+
 
 @helper.create
 def create(event, context):
