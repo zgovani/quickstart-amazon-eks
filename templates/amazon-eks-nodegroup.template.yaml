@@ -229,6 +229,9 @@ Conditions:
   AmznOS: !Equals
     - !Ref NodeAMIOS
     - Amazon-Linux-HVM
+  SuseOS: !Equals
+    - !Ref NodeAMIOS
+    - SUSE-SLES-15-HVM
   DisableTargetGroups: !Equals
     - !Join [",", !Ref 'TargetGroupARNs' ]
     - ""
@@ -640,7 +643,7 @@ Resources:
       SecurityGroups:
         - !Ref NodeSecurityGroup
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: !If [ SuseOS, /dev/sda1, /dev/xvda ]
           Ebs:
             VolumeSize: !Ref NodeVolumeSize
             VolumeType: gp2
