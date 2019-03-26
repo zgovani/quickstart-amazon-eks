@@ -281,6 +281,7 @@ Resources:
                 Action:
                   - ec2:AssociateAddress
                   - ec2:DescribeAddresses
+                  - eks:ListClusters
                 Resource: "*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
