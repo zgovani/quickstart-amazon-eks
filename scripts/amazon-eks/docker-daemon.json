@@ -5,6 +5,5 @@
     "max-size": "10m",
     "max-file": "10"
   },
-  "live-restore": true,
-  "max-concurrent-downloads": 10
+  "live-restore": true
 }
