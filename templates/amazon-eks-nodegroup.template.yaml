@@ -26,8 +26,8 @@ Metadata:
       - Label:
           default: AWS Quick Start Configuration
         Parameters:
-        - QSS3BucketName
-        - QSS3KeyPrefix
+          - QSS3BucketName
+          - QSS3KeyPrefix
     ParameterLabels:
       KeyPairName:
         default: SSH Key Name
@@ -174,9 +174,9 @@ Parameters:
     Description: Number of EKS node instances
     Type: Number
   MaxNumberOfNodes:
-    Default: 3
-    Description: The maximum number of Amazon EKS node instances.
-    Type: Number
+    Default: ""
+    Description: "[OPTIONAL] The maximum number of Amazon EKS node instances, if left blank will be set to the same value as NumberOfNodes"
+    Type: String
   NodeGroupName:
     Default: Default
     Description: Name for EKS node group
@@ -225,6 +225,7 @@ Parameters:
       forward slash (/).
     Type: String
 Conditions:
+  MaxNodes: !Not [ !Equals [ !Ref MaxNumberOfNodes, "" ] ]
   AmznOS: !Equals
     - !Ref NodeAMIOS
     - Amazon-Linux-HVM
@@ -523,7 +524,7 @@ Resources:
       DesiredCapacity: !Ref NumberOfNodes
       LaunchConfigurationName: !Ref NodeLaunchConfig
       MinSize: !Ref NumberOfNodes
-      MaxSize: !Ref MaxNumberOfNodes
+      MaxSize: !If [ MaxNodes, !Ref MaxNumberOfNodes, !Ref NumberOfNodes ]
       VPCZoneIdentifier: [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]
       TargetGroupARNs: !If [ DisableTargetGroups, !Ref "AWS::NoValue", !Ref TargetGroupARNs ]
       Tags:
@@ -645,34 +646,34 @@ Resources:
             VolumeType: gp2
             DeleteOnTermination: true
       UserData: !If
-          - AmznOS
-          - Fn::Base64:
-              !Sub |
-                #!/bin/bash
-                set -o xtrace
-                /etc/eks/bootstrap.sh ${EKSControlPlane} ${BootstrapArguments}
-                /opt/aws/bin/cfn-signal --exit-code $? \
-                      --stack  ${AWS::StackName} \
-                      --resource NodeGroup  \
-                      --region ${AWS::Region}
-          - Fn::Base64:
-              !Sub |
-                #!/bin/bash -e
+        - AmznOS
+        - Fn::Base64:
+            !Sub |
+            #!/bin/bash
+            set -o xtrace
+            /etc/eks/bootstrap.sh ${EKSControlPlane} ${BootstrapArguments}
+            /opt/aws/bin/cfn-signal --exit-code $? \
+                  --stack  ${AWS::StackName} \
+                  --resource NodeGroup  \
+                  --region ${AWS::Region}
+        - Fn::Base64:
+            !Sub |
+            #!/bin/bash -e
 
-                if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
-                    zypper in -y python2-setuptools
-                    update-alternatives --set easy_install /usr/bin/easy_install-2.7
-                fi
+            if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
+                zypper in -y python2-setuptools
+                update-alternatives --set easy_install /usr/bin/easy_install-2.7
+            fi
 
-                easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.zip
-                /usr/bin/cfn-init \
-                    --stack ${AWS::StackName} \
-                    --resource NodeLaunchConfig \
-                    --region ${AWS::Region}
-                /usr/bin/cfn-signal --exit-code $? \
-                    --stack ${AWS::StackName} \
-                    --resource NodeGroup \
-                    --region ${AWS::Region}
+            easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.zip
+            /usr/bin/cfn-init \
+                --stack ${AWS::StackName} \
+                --resource NodeLaunchConfig \
+                --region ${AWS::Region}
+            /usr/bin/cfn-signal --exit-code $? \
+                --stack ${AWS::StackName} \
+                --resource NodeGroup \
+                --region ${AWS::Region}
 Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup
