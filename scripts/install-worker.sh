@@ -8,6 +8,17 @@ IFS=$'\n\t'
 TEMPLATE_DIR=${TEMPLATE_DIR:-/tmp/worker}
 
 ################################################################################
+### Network ####################################################################
+################################################################################
+
+# Disable the automatic assignment of additional ip addresses
+zypper remove -y cloud-netconfig-ec2
+sed -i "s/cloud-netconfig //" /etc/sysconfig/network/config
+sed -i 's/CLOUD_NETCONFIG_MANAGE="yes"/CLOUD_NETCONFIG_MANAGE="no"/' /etc/sysconfig/network/ifcfg-eth*
+systemctl restart wickedd
+systemctl restart network
+
+################################################################################
 ### Packages ###################################################################
 ################################################################################
 
