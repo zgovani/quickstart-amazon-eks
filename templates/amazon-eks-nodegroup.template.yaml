@@ -677,6 +677,12 @@ Resources:
                 --stack ${AWS::StackName} \
                 --resource NodeGroup \
                 --region ${AWS::Region}
+            if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
+                # Need to enable some kernel boot options and reboot
+                sed -i 's|GRUB_CMDLINE_LINUX=""|GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1" |' /etc/default/grub
+                grub2-mkconfig -o /boot/grub2/grub.cfg
+                reboot
+            fi
 Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup
