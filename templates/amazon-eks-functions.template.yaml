@@ -71,6 +71,7 @@ Resources:
       - functions/packages/LambdaEniCleanup/lambda.zip
       - functions/packages/KubeConfigUpload/lambda.zip
       - functions/packages/CleanupLoadBalancers/lambda.zip
+      - functions/packages/CleanupSecurityGroupDependencies/lambda.zip
   CleanupLoadBalancersLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
