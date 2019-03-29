@@ -48,6 +48,8 @@ Parameters:
     Type: String
   CleanupLoadBalancersRoleArn:
     Type: String
+  CleanupSecurityGroupDependenciesRoleArn:
+    Type: String
 Conditions:
   CreateDeleteBucketContentsLambda: !Equals
     - !Ref 'DeleteLambdaZipsBucketContents'
@@ -81,6 +83,18 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupLoadBalancers/lambda.zip'
+  CleanupSecurityGroupDependenciesLambda:
+    DependsOn: CopyZips
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Ref CleanupSecurityGroupDependenciesRoleArn
+      Runtime: python2.7
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupSecurityGroupDependencies/lambda.zip'
   VPCLambdaCleanup:
     Type: Custom::LambdaCleanup
     Properties:
@@ -273,3 +287,5 @@ Outputs:
     Value: !GetAtt KubeConfigUploadLambda.Arn
   CleanupLoadBalancersLambdaArn:
     Value: !GetAtt CleanupLoadBalancersLambda.Arn
+  CleanupSecurityGroupDependenciesLambdaArn:
+    Value: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn

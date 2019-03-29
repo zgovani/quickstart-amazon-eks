@@ -283,6 +283,7 @@ Resources:
         VPCID: !Ref VPCID
         KubeConfigUploadRoleArn: !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn
         CleanupLoadBalancersRoleArn: !GetAtt IamStack.Outputs.CleanupLoadBalancersRoleArn
+        CleanupSecurityGroupDependenciesRoleArn: !GetAtt IamStack.Outputs.CleanupSecurityGroupDependenciesRoleArn
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
     Type: AWS::CloudFormation::Stack
@@ -401,3 +402,5 @@ Outputs:
     Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
   NodeInstanceRoleArn:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
+  CleanupSecurityGroupDependenciesLambdaArn:
+    Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
