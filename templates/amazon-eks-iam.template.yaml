@@ -370,6 +370,10 @@ Resources:
                   - 'elasticloadbalancing:DeleteLoadBalancer'
                   - 'ec2:DescribeTags'
                   - 'ec2:DeleteSecurityGroup'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'ec2:RevokeSecurityGroupEgress'
+                  - 'ec2:RevokeSecurityGroupIngress'
                 Effect: Allow
                 Resource: "*"
 Outputs:

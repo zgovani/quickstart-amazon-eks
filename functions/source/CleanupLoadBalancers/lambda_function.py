@@ -46,6 +46,30 @@ def send(event, context, response_status, response_data, physical_resource_id):
         print("send(..) failed executing requests.put(..): " + str(e))
 
 
+def delete_dependencies(sg_id, c):
+    for sg in c.describe_security_groups(Filters=[{'Name': 'ip-permission.group-id', 'Values': [sg_id]}])['SecurityGroups']:
+        for p in sg['IpPermissions']:
+            if 'UserIdGroupPairs' in p.keys():
+                if sg_id in [x['GroupId'] for x in p['UserIdGroupPairs']]:
+                    try:
+                        c.revoke_security_group_ingress(GroupId=sg['GroupId'], IpPermissions=[p])
+                    except Exception as e:
+                        print("ERROR: %s %s" % (sg['GroupId'], str(e)))
+    for sg in c.describe_security_groups(Filters=[{'Name': 'egress.ip-permission.group-id', 'Values': [sg_id]}])['SecurityGroups']:
+        for p in sg['IpPermissionsEgress']:
+            if 'UserIdGroupPairs' in p.keys():
+                if sg_id in [x['GroupId'] for x in p['UserIdGroupPairs']]:
+                    try:
+                        c.revoke_security_group_egress(GroupId=sg['GroupId'], IpPermissions=[p])
+                    except Exception as e:
+                        print("ERROR: %s %s" % (sg['GroupId'], str(e)))
+    for eni in c.describe_network_interfaces(Filters=[{'Name': 'group-id','Values': [sg_id]}])['NetworkInterfaces']:
+        try:
+            c.delete_network_interface(NetworkInterfaceId=eni['NetworkInterfaceId'])
+        except Exception as e:
+            print("ERROR: %s %s" % (eni['NetworkInterfaceId'], str(e)))
+
+
 def lambda_handler(event, context):
     status = SUCCESS
     try:
@@ -83,7 +107,14 @@ def lambda_handler(event, context):
                 {'Name': 'resource-type', 'Values': ['security-group']}
             ])
             for t in [r['ResourceId'] for r in response['Tags']]:
-                ec2.delete_security_group(GroupId=t)
+                try:
+                    ec2.delete_security_group(GroupId=t)
+                except ec2.exceptions.ClientError as e:
+                    if 'DependencyViolation' in str(e):
+                        print("Dependency error on %s" % t)
+                        delete_dependencies(t, ec2)
+                    else:
+                        raise
     except Exception as e:
         status = FAILED
         print(e)
