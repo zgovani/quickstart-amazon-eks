@@ -257,9 +257,9 @@ Parameters:
     Type: String
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.11", "1.10" ]
+    AllowedValues: [ "1.12", "1.11", "1.10" ]
+    Default: "1.12"
     Description: The Kubernetes control plane version.
-    Default: "1.11"
   LambdaZipsBucketName:
     Description: '[OPTIONAL] The name of the S3 bucket where the Lambda .zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
     Type: String

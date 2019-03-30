@@ -16,14 +16,16 @@ Parameters:
     Type: String
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.11", "1.10" ]
-    Default: "1.11"
+    AllowedValues: [ "1.12", "1.11", "1.10" ]
+    Default: "1.12"
 # NOTE: The cluster autoscaler version number is dependant on the K8S version it is being 
 #       deployed into. See...
 #       https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
 #       https://github.com/kubernetes/autoscaler/releases
 Mappings:
   K8sVersionMap:
+    "1.12":
+      ImageTag: v1.12.3
     "1.11":
       ImageTag: v1.3.8
     "1.10":
