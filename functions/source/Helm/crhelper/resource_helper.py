@@ -102,6 +102,14 @@ class CfnResource(object):
         else:
             log_helper.setup(self._log_level, boto_level=self._boto_level, formatter_cls=None)
 
+    @staticmethod
+    def _strip_service_token(event):
+        if "ServiceToken" in event.keys():
+            event.pop('ServiceToken')
+        if "ServiceToken" in event["ResourceProperties"].keys():
+            event["ResourceProperties"].pop('ServiceToken')
+        return event
+
     def _crhelper_init(self, event, context):
         self._send_response = False
         self.Status = SUCCESS
@@ -114,7 +122,7 @@ class CfnResource(object):
         if "CrHelperData" in event.keys():
             self.Data = event["CrHelperData"]
         self.RequestType = event["RequestType"]
-        self._event = event
+        self._event = self._strip_service_token(event)
         self._context = context
         self._response_url = event['ResponseURL']
         if self._timer:
