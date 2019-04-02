@@ -179,6 +179,14 @@ Parameters:
   BastionIAMRoleName:
     Type: String
     Default: ""
+  BastionEnableTCPForwarding:
+    Type: String
+    Default: "false"
+    AllowedValues: [ "true", "false" ]
+  BastionEnableX11Forwarding:
+    Type: String
+    Default: "false"
+    AllowedValues: [ "true", "false" ]
   BastionVariables:
     Type: String
     Default: ""
@@ -211,6 +219,8 @@ Resources:
           - !Ref BastionBootstrapScript
         AlternativeIAMRole: !If [CustomBastionRole, !Ref BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
         BastionAMIOS: !Ref BastionOS
+        EnableTCPForwarding: !Ref BastionEnableTCPForwarding
+        EnableX11Forwarding: !Ref BastionEnableX11Forwarding
         EnvironmentVariables: !Sub
         - >
           K8S_ROLE_ARN=${IamStack.Outputs.ControlPlaneProvisionRoleArn},
