@@ -384,8 +384,8 @@ function prevent_process_snooping() {
 }
 
 function setup_kubeconfig() {
-    mkdir -p /home/ec2-user/.kube
-    cat > /home/ec2-user/.kube/config <<EOF
+    mkdir -p /home/${user_group}/.kube
+    cat > /home/${user_group}/.kube/config <<EOF
 apiVersion: v1
 clusters:
 - cluster:
@@ -413,7 +413,7 @@ users:
         - "-r"
         - "${K8S_ROLE_ARN}"
 EOF
-    chown -R ec2-user /home/ec2-user/.kube/
+    chown -R ${user_group} /home/${user_group}/.kube/
 }
 
 function install_kubernetes_client_tools() {
@@ -432,7 +432,7 @@ function install_kubernetes_client_tools() {
     mv ./linux-amd64/tiller /usr/local/bin/
     rm -rf ./linux-amd64/
     touch /var/log/tiller.log
-    chown ec2-user /var/log/tiller.log
+    chown ${user_group} /var/log/tiller.log
     cat > /usr/local/bin/helm <<"EOF"
 #!/bin/bash
 /usr/local/bin/tiller -listen 127.0.0.1:44134 -alsologtostderr -storage secret &>> /var/log/tiller.log &
@@ -445,7 +445,7 @@ kill %1
 exit ${EXIT_CODE}
 EOF
     chmod +x /usr/local/bin/helm
-    su ec2-user -c "/usr/local/bin/helm init --client-only"
+    su ${user_group} -c "/usr/local/bin/helm init --client-only"
 }
 
 ##################################### End Function Definitions
