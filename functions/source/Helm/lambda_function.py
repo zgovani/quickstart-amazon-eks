@@ -128,7 +128,7 @@ def helm_init(event):
     return physical_resource_id
 
 
-def build_flags(properties):
+def build_flags(properties, request_type="Create"):
     val_file = ""
     if "ValueYaml" in properties:
         write_values(properties["ValueYaml"], '/tmp/values.yaml')
@@ -141,7 +141,7 @@ def build_flags(properties):
     if "Version" in properties:
         version = "--version %s" % properties['Version']
     name = ""
-    if "Name" in properties:
+    if "Name" in properties and request_type != "Update":
         name = "--name %s" % properties['Name']
     if "ChartBucket" in properties and "ChartKey" in properties:
         properties['Chart'] = '/tmp/chart.tgz'
@@ -166,7 +166,8 @@ def create(event, context):
 @helper.update
 def update(event, context):
     physical_resource_id = helm_init(event)
-    cmd = "helm --home /tmp/.helm upgrade %s %s" % (physical_resource_id, build_flags(event['ResourceProperties']))
+    cmd = "helm --home /tmp/.helm upgrade %s %s" % (
+        physical_resource_id, build_flags(event['ResourceProperties'], event["RequestType"]))
     output = run_command(cmd)
     response_data = parse_install_output(output)
     physical_resource_id = response_data["Name"]
