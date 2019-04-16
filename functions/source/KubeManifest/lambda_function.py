@@ -93,7 +93,7 @@ def create_kubeconfig(bucket, key, kms_context):
 
 def json_serial(o):
     if isinstance(o, (datetime, date)):
-        return o.isoformat()
+        return o.strftime('%Y-%m-%dT%H:%M:%SZ')
     raise TypeError("Object of type '%s' is not JSON serializable" % type(o))
 
 
