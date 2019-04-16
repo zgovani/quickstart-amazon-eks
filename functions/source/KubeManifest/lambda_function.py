@@ -8,6 +8,7 @@ import shlex
 import os
 import re
 from ruamel import yaml
+from datetime import date, datetime
 
 
 SUCCESS = "SUCCESS"
@@ -39,7 +40,7 @@ def send(event, context, response_status, response_data, physical_resource_id, r
     response_body['LogicalResourceId'] = event['LogicalResourceId']
     if response_data and response_data != {} and response_data != [] and isinstance(response_data, dict):
         response_body['Data'] = response_data
-    json_response_body = json.dumps(response_body)
+    json_response_body = json.dumps(response_body, default=json_serial)
     logging.debug("Response body:\n" + json_response_body)
     headers = {
         'content-type': '',
@@ -90,9 +91,15 @@ def create_kubeconfig(bucket, key, kms_context):
     os.environ["KUBECONFIG"] = "/tmp/.kube/config"
 
 
+def json_serial(o):
+    if isinstance(o, (datetime, date)):
+        return o.isoformat()
+    raise TypeError("Object of type '%s' is not JSON serializable" % type(o))
+
+
 def write_manifest(manifest, path):
     f = open(path, "w")
-    f.write(json.dumps(manifest))
+    f.write(json.dumps(manifest, default=json_serial))
     f.close()
 
 
@@ -245,7 +252,7 @@ def lambda_handler(event, context):
     # make sure we send a failure to CloudFormation if the function is going to timeout
     timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
     timer.start()
-    print('Received event: %s' % json.dumps(event))
+    print('Received event: %s' % json.dumps(event, default=json_serial))
     status = SUCCESS
     response_data = {}
     physical_resource_id = None
@@ -282,7 +289,7 @@ def lambda_handler(event, context):
             else:
                 manifest = fix_types(generate_name(event, physical_resource_id))
             write_manifest(manifest, manifest_file)
-            print("Applying manifest: %s" % json.dumps(manifest))
+            print("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
             if event['RequestType'] == 'Create':
                 retries = 0
                 while retries <= 5:
