@@ -260,7 +260,7 @@ Resources:
     Condition: EnableBastion
     Type: "AWS::EC2::SecurityGroupIngress"
     Properties:
-      Description: Allow pods to communicate with the cluster API Server
+      Description: Allow SSH from Bastion server to Nodes
       GroupId: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
       SourceSecurityGroupId: !GetAtt BastionStack.Outputs.BastionSecurityGroupID
       IpProtocol: tcp
