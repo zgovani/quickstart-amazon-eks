@@ -690,7 +690,7 @@ Resources:
             b-bootstrap:
               command: !Sub /etc/eks/bootstrap.sh ${EKSControlPlane} ${BootstrapArguments}
     Properties:
-      AssociatePublicIpAddress: true
+      AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref NodeInstanceProfile
       ImageId: !FindInMap
         - AWSAMIRegionMap
