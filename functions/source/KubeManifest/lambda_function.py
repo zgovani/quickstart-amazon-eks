@@ -307,7 +307,7 @@ def lambda_handler(event, context):
                 response_data = build_output(json.loads(outp))
                 physical_resource_id = response_data["selfLink"]
             if event['RequestType'] == 'Update':
-                outp = run_command("kubectl apply -f %s" % manifest_file)
+                outp = run_command("kubectl apply -o json -f %s" % manifest_file)
                 response_data = build_output(json.loads(outp))
             if event['RequestType'] == 'Delete':
                 if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
