@@ -312,6 +312,7 @@ def create(event, context):
     prefix = event['ResourceProperties']['ParentStackId'].split("/")[1]
     suffix = "-" + event["LogicalResourceId"] + "-" + rand_string(13)
     parent_properties = cfn_client.describe_stacks(StackName=prefix)['Stacks'][0]
+    parent_tags = list(filter(lambda item: 'aws:' not in item['Key'] , parent_properties['Tags']))
     prefix_length = len(prefix)
     suffix_length = len(suffix)
     if prefix_length + suffix_length > 128:
@@ -328,7 +329,7 @@ def create(event, context):
         Tags=[{
             'Key': 'ParentStackId',
             'Value': event['ResourceProperties']['ParentStackId']
-        }] + parent_properties['Tags']
+        }] + parent_tags
     )
     physical_resource_id = response['StackId']
     event["Poll"] = True
