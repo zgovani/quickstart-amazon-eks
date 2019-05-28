@@ -72,6 +72,33 @@ Resources:
       - functions/packages/KubeConfigUpload/lambda.zip
       - functions/packages/CleanupLoadBalancers/lambda.zip
       - functions/packages/CleanupSecurityGroupDependencies/lambda.zip
+      - functions/packages/kubectlLayer/lambda.zip
+      - functions/packages/helmLayer/lambda.zip
+      - functions/packages/crhelperLayer/lambda.zip
+  KubectlLayer:
+    DependsOn: CopyZips
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/kubectlLayer/lambda.zip'
+  HelmLayer:
+    DependsOn: CopyZips
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      Content:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/helmLayer/lambda.zip'
+  CrhelperLayer:
+    DependsOn: CopyZips
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+      Content:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/crhelperLayer/lambda.zip'
   CleanupLoadBalancersLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
@@ -152,6 +179,7 @@ Resources:
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
       Timeout: 900
+      Layers: [!Ref KubectlLayer, !Ref HelmLayer, !Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/Helm/lambda.zip'
@@ -167,6 +195,7 @@ Resources:
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
       Timeout: 900
+      Layers: [!Ref KubectlLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
@@ -182,6 +211,7 @@ Resources:
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
       Timeout: 900
+      Layers: [!Ref KubectlLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeGet/lambda.zip'
