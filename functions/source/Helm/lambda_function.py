@@ -170,7 +170,6 @@ def update(event, context):
         physical_resource_id, build_flags(event['ResourceProperties'], event["RequestType"]))
     output = run_command(cmd)
     response_data = parse_install_output(output)
-    physical_resource_id = response_data["Name"]
     helper.Data.update(response_data)
     return physical_resource_id
 
