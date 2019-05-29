@@ -195,7 +195,7 @@ Resources:
       Role: !Ref EKSProvisionRoleArn
       Runtime: python3.6
       Timeout: 900
-      Layers: [!Ref KubectlLayer]
+      Layers: [!Ref KubectlLayer, !Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'

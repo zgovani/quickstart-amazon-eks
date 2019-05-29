@@ -1,7 +1,5 @@
 import json
 import logging
-import threading
-from botocore.vendored import requests
 import boto3
 import subprocess
 import shlex
@@ -9,66 +7,41 @@ import os
 import re
 from ruamel import yaml
 from datetime import date, datetime
+from crhelper import CfnResource
+from time import sleep
 
 
 SUCCESS = "SUCCESS"
 FAILED = "FAILED"
 
+logger = logging.getLogger(__name__)
+helper = CfnResource(json_logging=True, log_level='DEBUG')
 
-s3_client = boto3.client('s3')
-kms_client = boto3.client('kms')
-
-
-def send(event, context, response_status, response_data, physical_resource_id, reason=None):
-    response_url = event['ResponseURL']
-    logging.debug("CFN response URL: " + response_url)
-    response_body = dict()
-    response_body['Status'] = response_status
-    msg = 'See details in CloudWatch Log Stream: ' + context.log_stream_name
-    if not reason:
-        response_body['Reason'] = msg
-    else:
-        response_body['Reason'] = str(reason)
-    if physical_resource_id:
-        response_body['PhysicalResourceId'] = physical_resource_id
-    elif 'PhysicalResourceId' in event:
-        response_body['PhysicalResourceId'] = event['PhysicalResourceId']
-    else:
-        response_body['PhysicalResourceId'] = context.log_stream_name
-    response_body['StackId'] = event['StackId']
-    response_body['RequestId'] = event['RequestId']
-    response_body['LogicalResourceId'] = event['LogicalResourceId']
-    if response_data and response_data != {} and response_data != [] and isinstance(response_data, dict):
-        response_body['Data'] = response_data
-    json_response_body = json.dumps(response_body, default=json_serial)
-    logging.debug("Response body:\n" + json_response_body)
-    headers = {
-        'content-type': '',
-        'content-length': str(len(json_response_body))
-    }
-    print("Returning response: %s" % json_response_body)
-    try:
-        response = requests.put(response_url, data=json_response_body, headers=headers)
-        logging.info("CloudFormation returned status code: " + response.reason)
-    except Exception as e:
-        logging.error("send(..) failed executing requests.put(..): " + str(e))
-        raise
-
-
-def timeout(event, context):
-    logging.error('Execution is about to time out, sending failure response to CloudFormation')
-    send(event, context, FAILED, {}, None)
+try:
+    s3_client = boto3.client('s3')
+    kms_client = boto3.client('kms')
+except Exception as init_exception:
+    helper.init_failure(init_exception)
 
 
 def run_command(command):
-    try:
-        print("executing command: %s" % command)
-        output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
-        print(output)
-    except subprocess.CalledProcessError as exc:
-        print("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
-        raise Exception(exc.output.decode("utf-8"))
-    return output
+    retries = 0
+    while True:
+        try:
+            try:
+                print("executing command: %s" % command)
+                output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
+                print(output)
+            except subprocess.CalledProcessError as exc:
+                print("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
+                raise Exception(exc.output.decode("utf-8"))
+            return output
+        except Exception as e:
+            if 'Unable to connect to the server' not in str(e) or retries >= 5:
+                raise
+            print("{}, retrying in 5 seconds").format(e)
+            sleep(5)
+            retries += 1
 
 
 def create_kubeconfig(bucket, key, kms_context):
@@ -167,7 +140,7 @@ def traverse_modify(obj, target_path, action):
 
 def traverse_modify_all(obj, action):
 
-    def transformer(path, value):
+    def transformer(_, value):
         return action(value)
     return traverse(obj, callback=transformer)
 
@@ -176,9 +149,9 @@ def to_path(path):
     if isinstance(path, list):
         return path  # already in list format
 
-    def _iter_path(path):
-        indexes = [[int(i[1:-1])] for i in re.findall(r'\[[0-9]+\]', path)]
-        lists = re.split(r'\[[0-9]+\]', path)
+    def _iter_path(inner_path):
+        indexes = [[int(i[1:-1])] for i in re.findall(r'\[[0-9]+\]', inner_path)]
+        lists = re.split(r'\[[0-9]+\]', inner_path)
         for parts in range(len(lists)):
             for part in lists[parts].strip('.').split('.'):
                 yield part
@@ -186,6 +159,7 @@ def to_path(path):
                 yield indexes[parts]
             else:
                 yield []
+
     return list(_iter_path(path))[:-1]
 
 
@@ -206,6 +180,7 @@ def fix_types(manifest):
 
 def aws_auth_configmap(arns, groups, username=None, delete=False):
     new = False
+    outp = ''
     try:
         outp = run_command("kubectl get configmap/aws-auth -n kube-system -o yaml")
     except Exception as e:
@@ -248,82 +223,69 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
     print(outp)
 
 
-def lambda_handler(event, context):
-    # make sure we send a failure to CloudFormation if the function is going to timeout
-    timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
-    timer.start()
-    print('Received event: %s' % json.dumps(event, default=json_serial))
-    status = SUCCESS
-    response_data = {}
+def init(event):
+    logger.debug('Received event: %s' % json.dumps(event, default=json_serial))
+
     physical_resource_id = None
-    error_message = None
-    try:
-        os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
-        if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
-            raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
-        bucket, key, kms_context = get_config_details(event)
-        create_kubeconfig(bucket, key, kms_context)
-        if 'Users' in event['ResourceProperties'].keys():
-            username = None
-            if 'Username' in event['ResourceProperties']['Users'].keys():
-                    username = event['ResourceProperties']['Users']['Username']
-            if event['RequestType'] == 'Delete':
-                aws_auth_configmap(
-                    event['ResourceProperties']['Users']['Arns'],
-                    event['ResourceProperties']['Users']['Groups'],
-                    username,
-                    delete=True
-                )
-            else:
-                aws_auth_configmap(
-                    event['ResourceProperties']['Users']['Arns'],
-                    event['ResourceProperties']['Users']['Groups'],
-                    username
-                )
-        if 'Manifest' in event['ResourceProperties'].keys():
-            manifest_file = '/tmp/manifest.json'
-            if "PhysicalResourceId" in event.keys():
-                physical_resource_id = event["PhysicalResourceId"]
-            if type(event['ResourceProperties']['Manifest']) == str:
-                manifest = generate_name(event, physical_resource_id)
-            else:
-                manifest = fix_types(generate_name(event, physical_resource_id))
-            write_manifest(manifest, manifest_file)
-            print("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
-            if event['RequestType'] == 'Create':
-                retries = 0
-                while retries <= 5:
-                    try:
-                        outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
-                    except Exception as e:
-                        if 'Unable to connect to the server' in str(e):
-                            print("{}, retrying in 5 seconds").format(e)
-                            sleep(5)
-                            retries += 1
-                            continue
-                        else:
-                            raise
-                    break
-                response_data = build_output(json.loads(outp))
-                physical_resource_id = response_data["selfLink"]
-            if event['RequestType'] == 'Update':
-                outp = run_command("kubectl apply -o json -f %s" % manifest_file)
-                response_data = build_output(json.loads(outp))
-            if event['RequestType'] == 'Delete':
-                if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
-                    try:
-                        run_command("kubectl delete -f %s" % manifest_file)
-                    except Exception as e:
-                        if 'Error from server (NotFound)' not in str(e):
-                            raise
-                        else:
-                            print("resource already gone, or never existed")
-                else:
-                    print("physical_resource_id is not a kubernetes resource, assuming there is nothing to delete")
-    except Exception as e:
-        logging.error('Exception: %s' % e, exc_info=True)
-        status = FAILED
-        error_message = str(e)
-    finally:
-        timer.cancel()
-        send(event, context, status, response_data, physical_resource_id, reason=error_message)
+    manifest_file = None
+    os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
+    if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
+        raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
+    bucket, key, kms_context = get_config_details(event)
+    create_kubeconfig(bucket, key, kms_context)
+    if 'Users' in event['ResourceProperties'].keys():
+        username = None
+        if 'Username' in event['ResourceProperties']['Users'].keys():
+            username = event['ResourceProperties']['Users']['Username']
+        if event['RequestType'] == 'Delete':
+            aws_auth_configmap(
+                event['ResourceProperties']['Users']['Arns'],
+                event['ResourceProperties']['Users']['Groups'],
+                username,
+                delete=True
+            )
+        else:
+            aws_auth_configmap(
+                event['ResourceProperties']['Users']['Arns'],
+                event['ResourceProperties']['Users']['Groups'],
+                username
+            )
+    if 'Manifest' in event['ResourceProperties'].keys():
+        manifest_file = '/tmp/manifest.json'
+        if "PhysicalResourceId" in event.keys():
+            physical_resource_id = event["PhysicalResourceId"]
+        if type(event['ResourceProperties']['Manifest']) == str:
+            manifest = generate_name(event, physical_resource_id)
+        else:
+            manifest = fix_types(generate_name(event, physical_resource_id))
+        write_manifest(manifest, manifest_file)
+        logger.debug("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
+    return physical_resource_id, manifest_file
+
+
+@helper.create
+def create_handler(event, _):
+    physical_resource_id,  manifest_file = init(event)
+    if not manifest_file:
+        return physical_resource_id
+    outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
+    helper.Data = build_output(json.loads(outp))
+    return helper.Data["selfLink"]
+
+
+@helper.update
+def update_handler(event, _):
+    physical_resource_id,  manifest_file = init(event)
+    if not manifest_file:
+        return physical_resource_id
+    outp = run_command("kubectl apply -o json -f %s" % manifest_file)
+    helper.Data = build_output(json.loads(outp))
+    return helper.Data["selfLink"]
+
+
+@helper.delete
+def delete_handler(event, _):
+    physical_resource_id,  manifest_file = init(event)
+    if not manifest_file:
+        return physical_resource_id
+    run_command("kubectl delete -f %s" % manifest_file)
