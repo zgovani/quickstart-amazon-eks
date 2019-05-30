@@ -108,7 +108,6 @@ def truncate(response_data):
 
 def helm_init(event):
     physical_resource_id = None
-    os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
     if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
         raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
     bucket, key, kms_context = get_config_details(event)

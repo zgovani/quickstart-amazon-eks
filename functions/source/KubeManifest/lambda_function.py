@@ -10,10 +10,6 @@ from datetime import date, datetime
 from crhelper import CfnResource
 from time import sleep
 
-
-SUCCESS = "SUCCESS"
-FAILED = "FAILED"
-
 logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
 
@@ -223,12 +219,11 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
     print(outp)
 
 
-def init(event):
+def handler_init(event):
     logger.debug('Received event: %s' % json.dumps(event, default=json_serial))
 
     physical_resource_id = None
     manifest_file = None
-    os.environ["PATH"] = "/var/task/bin:" + os.environ.get("PATH")
     if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
         raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
     bucket, key, kms_context = get_config_details(event)
@@ -265,7 +260,7 @@ def init(event):
 
 @helper.create
 def create_handler(event, _):
-    physical_resource_id,  manifest_file = init(event)
+    physical_resource_id,  manifest_file = handler_init(event)
     if not manifest_file:
         return physical_resource_id
     outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
@@ -275,7 +270,7 @@ def create_handler(event, _):
 
 @helper.update
 def update_handler(event, _):
-    physical_resource_id,  manifest_file = init(event)
+    physical_resource_id,  manifest_file = handler_init(event)
     if not manifest_file:
         return physical_resource_id
     outp = run_command("kubectl apply -o json -f %s" % manifest_file)
@@ -285,7 +280,11 @@ def update_handler(event, _):
 
 @helper.delete
 def delete_handler(event, _):
-    physical_resource_id,  manifest_file = init(event)
+    physical_resource_id,  manifest_file = handler_init(event)
     if not manifest_file:
         return physical_resource_id
     run_command("kubectl delete -f %s" % manifest_file)
+
+
+def lambda_handler(event, context):
+    helper(event, context)
