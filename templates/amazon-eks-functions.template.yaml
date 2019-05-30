@@ -106,8 +106,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref CleanupLoadBalancersRoleArn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupLoadBalancers/lambda.zip'
@@ -118,7 +119,8 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref CleanupSecurityGroupDependenciesRoleArn
-      Runtime: python2.7
+      Layers: [!Ref CrhelperLayer]
+      Runtime: python3.7
       Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
@@ -139,8 +141,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref LambdaCleanUpFunctionRoleArn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/LambdaEniCleanup/lambda.zip'
@@ -165,8 +168,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref QuickStartStackMakerRoleArn
-      Runtime: python3.6
+      Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CfnStackAssumeRole/lambda.zip'
@@ -177,7 +181,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 512
       Role: !Ref EKSProvisionRoleArn
-      Runtime: python3.6
+      Runtime: python3.7
       Timeout: 900
       Layers: [!Ref KubectlLayer, !Ref HelmLayer, !Ref CrhelperLayer]
       Code:
@@ -193,7 +197,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 256
       Role: !Ref EKSProvisionRoleArn
-      Runtime: python3.6
+      Runtime: python3.7
       Timeout: 900
       Layers: [!Ref KubectlLayer, !Ref CrhelperLayer]
       Code:
@@ -209,9 +213,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 256
       Role: !Ref EKSProvisionRoleArn
-      Runtime: python3.6
+      Runtime: python3.7
       Timeout: 900
-      Layers: [!Ref KubectlLayer]
+      Layers: [!Ref KubectlLayer, !Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeGet/lambda.zip'
@@ -226,8 +230,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref DeleteBucketContentsRoleArn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/DeleteBucketContents/lambda.zip'
@@ -238,8 +243,9 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !Ref KubeConfigUploadRoleArn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref CrhelperLayer]
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeConfigUpload/lambda.zip'
@@ -248,61 +254,41 @@ Resources:
     Properties:
       Description: Copies objects from a source S3 bucket to a destination
       Handler: index.handler
-      Runtime: python2.7
+      Runtime: python3.7
       Role: !Ref CopyZipsRoleArn
       Timeout: 900
       Code:
         ZipFile: |
-          import json
-          import logging
-          import threading
-          import boto3
           import cfnresponse
+          import logging
+          import boto3
+          logger = logging.getLogger(__name__)
           def copy_objects(source_bucket, dest_bucket, prefix, objects):
               s3 = boto3.client('s3')
               for o in objects:
                   key = prefix + o
-                  copy_source = {
-                      'Bucket': source_bucket,
-                      'Key': key
-                  }
-                  print('copy_source: %s' % copy_source)
-                  print('dest_bucket = %s'%dest_bucket)
-                  print('key = %s' %key)
-                  s3.copy_object(CopySource=copy_source, Bucket=dest_bucket,
-              Key=key)
+                  copy_source = {'Bucket': source_bucket, 'Key': key}
+                  logging.info(f'copy_source: {copy_source}\ndest_bucket: {dest_bucket}\nkey: {key}')
+                  s3.copy_object(CopySource=copy_source, Bucket=dest_bucket, Key=key)
           def delete_objects(bucket, prefix, objects):
               s3 = boto3.client('s3')
               objects = {'Objects': [{'Key': prefix + o} for o in objects]}
               s3.delete_objects(Bucket=bucket, Delete=objects)
-          def timeout(event, context):
-              logging.error('Execution is about to time out, sending failure response to CloudFormation')
-              cfnresponse.send(event, context, cfnresponse.FAILED, {}, physical_resource_id)
           def handler(event, context):
-              physical_resource_id = None
-              if "PhysicalResourceId" in event.keys():
-                physical_resource_id = event["PhysicalResourceId"]
-              # make sure we send a failure to CloudFormation if the function is going to timeout
-              timer = threading.Timer((context.get_remaining_time_in_millis()
-              / 1000.00) - 0.5, timeout, args=[event, context])
-              timer.start()
-              print('Received event: %s' % json.dumps(event))
+              logger.debug(event)
               status = cfnresponse.SUCCESS
               try:
-                  source_bucket = event['ResourceProperties']['SourceBucket']
-                  dest_bucket = event['ResourceProperties']['DestBucket']
-                  prefix = event['ResourceProperties']['Prefix']
-                  objects = event['ResourceProperties']['Objects']
                   if event['RequestType'] == 'Delete':
-                      delete_objects(dest_bucket, prefix, objects)
+                      delete_objects(event['ResourceProperties']['DestBucket'], event['ResourceProperties']['Prefix'],
+                                     event['ResourceProperties']['Objects'])
                   else:
-                      copy_objects(source_bucket, dest_bucket, prefix, objects)
-              except Exception as e:
-                  logging.error('Exception: %s' % e, exc_info=True)
+                      copy_objects(event['ResourceProperties']['SourceBucket'], event['ResourceProperties']['DestBucket'],
+                                   event['ResourceProperties']['Prefix'], event['ResourceProperties']['Objects'])
+              except Exception:
+                  logging.error('Unhandled exception', exc_info=True)
                   status = cfnresponse.FAILED
               finally:
-                  timer.cancel()
-                  cfnresponse.send(event, context, status, {}, physical_resource_id)
+                  cfnresponse.send(event, context, status, {}, None)
 Outputs:
   HelmLambdaArn:
     Value: !GetAtt HelmLambda.Arn
