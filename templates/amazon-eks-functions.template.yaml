@@ -134,6 +134,14 @@ Resources:
       - !Ref KubeManifestLambda
       - !Ref HelmLambda
       - !Ref KubeGetLambda
+  LambdaSGCleanup:
+    DependsOn: VPCLambdaCleanup
+    Type: Custom::LambdaSGCleanup
+    Properties:
+      ServiceToken: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn
+      Region: !Ref "AWS::Region"
+      SecurityGroups:
+        - !Ref EKSLambdaSecurityGroup
   VPCLambdaCleanupLambdaFunction:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"

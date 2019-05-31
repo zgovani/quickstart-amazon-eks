@@ -7,6 +7,7 @@
 
 import logging
 import boto3
+from time import sleep
 from crhelper import CfnResource
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ helper = CfnResource(json_logging=True, log_level='DEBUG')
 
 
 def delete_dependencies(sg_id, c):
+    complete = True
     filters = [{'Name': 'ip-permission.group-id', 'Values': [sg_id]}]
     for sg in c.describe_security_groups(Filters=filters)['SecurityGroups']:
         for p in sg['IpPermissions']:
@@ -22,6 +24,7 @@ def delete_dependencies(sg_id, c):
                     try:
                         c.revoke_security_group_ingress(GroupId=sg['GroupId'], IpPermissions=[p])
                     except Exception as e:
+                        complete = False
                         logger.error("ERROR: %s %s" % (sg['GroupId'], str(e)))
     filters = [{'Name': 'egress.ip-permission.group-id', 'Values': [sg_id]}]
     for sg in c.describe_security_groups(Filters=filters)['SecurityGroups']:
@@ -31,20 +34,31 @@ def delete_dependencies(sg_id, c):
                     try:
                         c.revoke_security_group_egress(GroupId=sg['GroupId'], IpPermissions=[p])
                     except Exception as e:
+                        complete = False
                         logger.error("ERROR: %s %s" % (sg['GroupId'], str(e)))
     filters = [{'Name': 'group-id', 'Values': [sg_id]}]
     for eni in c.describe_network_interfaces(Filters=filters)['NetworkInterfaces']:
         try:
             c.delete_network_interface(NetworkInterfaceId=eni['NetworkInterfaceId'])
         except Exception as e:
+            complete = False
             logger.error("ERROR: %s %s" % (eni['NetworkInterfaceId'], str(e)))
+    return complete
 
 
 @helper.delete
 def delete_handler(event, _):
     ec2 = boto3.client('ec2')
     for sg_id in event["ResourceProperties"]["SecurityGroups"]:
-        delete_dependencies(sg_id, ec2)
+        retries = 5
+        while True:
+            if delete_dependencies(sg_id, ec2):
+                break
+            if retries == 0:
+                logger.error(f"failed to delete {sg_id} dependencies after 5 retries")
+                break
+            retries -= 1
+            sleep(15)
 
 
 def lambda_handler(event, context):
