@@ -2,9 +2,6 @@ import boto3
 import random
 import string
 import logging
-import threading
-from botocore.vendored import requests
-import json
 from botocore.credentials import (
     AssumeRoleCredentialFetcher,
     CredentialResolver,
@@ -91,7 +88,7 @@ def create(event, context):
     prefix = event['ResourceProperties']['ParentStackId'].split("/")[1]
     suffix = "-" + event["LogicalResourceId"] + "-" + rand_string(13)
     parent_properties = cfn_client.describe_stacks(StackName=prefix)['Stacks'][0]
-    parent_tags = list(filter(lambda item: 'aws:' not in item['Key'] , parent_properties['Tags']))
+    parent_tags = list(filter(lambda item: 'aws:' not in item['Key'], parent_properties['Tags']))
     prefix_length = len(prefix)
     suffix_length = len(suffix)
     if prefix_length + suffix_length > 128:
