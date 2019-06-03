@@ -80,17 +80,22 @@ def parse_install_output(output):
                     resource_type = ""
                 else:
                     resource_type = line.split()[1].split('/')[1].replace('(related)', '')
-            elif resource_type and not line.startswith('NAME') and line:
-                if ', Resource=' in line:
-                    new_resource_type = line.split()[1].replace('Resource=', '')
-                    if resource_type != new_resource_type:
-                        count = 0
-                        resource_type = new_resource_type
-                    data[resource_type + str(count)] = line.split()[2]
-                else:
-                    data[resource_type + str(count)] = line.split()[0]
+            elif resource_type and not line.startswith('NAME') and line and ', Resource=' not in line:
+                data[resource_type + str(count)] = line.split()[0]
                 count += 1
+            elif ', Resource=' in line and not resource_type:
+                resource_type = line.split()[1].replace('Resource=', '')
+                count = get_next_index(data, resource_type)
+                data[resource_type + str(count)] = line.split()[2]
     return data
+
+
+def get_next_index(data, resource_type):
+    index = 0
+    for t in data.keys():
+        if t.startswith(resource_type) and t[len(resource_type):].isnumeric():
+            index = int(t[len(resource_type):]) + 1
+    return index
 
 
 def get_config_details(event):
