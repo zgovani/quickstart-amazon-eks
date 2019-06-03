@@ -404,6 +404,7 @@ Resources:
                   - 'ec2:RevokeSecurityGroupEgress'
                   - 'ec2:RevokeSecurityGroupIngress'
                   - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DetachNetworkInterface'
                 Effect: Allow
                 Resource: "*"
 Outputs:

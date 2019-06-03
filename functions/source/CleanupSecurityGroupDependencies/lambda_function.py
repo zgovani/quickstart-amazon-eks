@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
 
 
+def get_attachment_id_for_eni(eni):
+    try:
+        return eni['Attachment']['AttachmentId']
+    except KeyError:
+        return None
+
+
 def delete_dependencies(sg_id, c):
     complete = True
     filters = [{'Name': 'ip-permission.group-id', 'Values': [sg_id]}]
@@ -39,6 +46,10 @@ def delete_dependencies(sg_id, c):
     filters = [{'Name': 'group-id', 'Values': [sg_id]}]
     for eni in c.describe_network_interfaces(Filters=filters)['NetworkInterfaces']:
         try:
+            attachment_id = get_attachment_id_for_eni(eni)
+            if attachment_id:
+                c.detach_network_interface(AttachmentId=attachment_id, Force=True)
+                sleep(5)
             c.delete_network_interface(NetworkInterfaceId=eni['NetworkInterfaceId'])
         except Exception as e:
             complete = False

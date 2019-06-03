@@ -52,9 +52,10 @@ def delete_interface(interface_id):
 
 
 def get_attachment_id_for_eni(eni):
-    if 'Attachment' in eni and 'AttachmentId' in eni['Attachment']:
+    try:
         return eni['Attachment']['AttachmentId']
-    return None
+    except KeyError:
+        return None
 
 
 def get_eni_id(eni):
@@ -95,14 +96,10 @@ def clean_up_enis_for_lambda_function(function_name):
                 map(lambda eni: get_eni_id(eni), response['NetworkInterfaces'])
             )
 
-            # Print out what we are going to do
-            logger.info('Detaching the following attachments [{0}]'.format(",".join(eni_attachment_ids)))
-
             # Detach each ENI
             for eni_attachment_id in eni_attachment_ids:
                 detach_interface(eni_attachment_id)
 
-            logger.info('Deleting the following interfaces [{0}]'.format(",".join(eni_ids)))
             # Delete each ENI
             for eni_id in eni_ids:
                 delete_interface(eni_id)
