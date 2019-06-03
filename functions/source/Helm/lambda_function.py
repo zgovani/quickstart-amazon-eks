@@ -26,15 +26,16 @@ def rand_string(l):
 
 def run_command(command):
     logger.debug("executing command: %s" % command)
-    e = None
+    err = None
+    output = None
     try:
         output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
         logger.debug(output)
     except subprocess.CalledProcessError as exc:
         logger.debug("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
-        e = Exception(exc.output.decode("utf-8"))
-    if e:
-        raise e
+        err = Exception(exc.output.decode("utf-8"))
+    if err:
+        raise err
     else:
         return output
 
@@ -46,8 +47,8 @@ def create_kubeconfig(bucket, key, kms_context):
         pass
     try:
         enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
-    except Exception as e:
-        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
+    except Exception as exc:
+        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(exc))
     kubeconf = kms_client.decrypt(
         CiphertextBlob=enc_config,
         EncryptionContext=kms_context
@@ -62,6 +63,7 @@ def parse_install_output(output):
     data = {}
     resource_type = ""
     resources_block = False
+    count = 0
     for line in output.split('\n'):
         if line.startswith("NAME:"):
             data['Name'] = line.split()[1]
@@ -113,6 +115,7 @@ def helm_init(event):
     bucket, key, kms_context = get_config_details(event)
     create_kubeconfig(bucket, key, kms_context)
     run_command("helm --home /tmp/.helm init --client-only")
+    repo_name = ''
     if 'Chart' in event['ResourceProperties'].keys():
         repo_name = event['ResourceProperties']['Chart'].split('/')[0]
     if "PhysicalResourceId" in event.keys():
@@ -152,7 +155,7 @@ def build_flags(properties, request_type="Create"):
 
 
 @helper.create
-def create(event, context):
+def create(event, _):
     helm_init(event)
 
     cmd = "helm --home /tmp/.helm install %s" % build_flags(event['ResourceProperties'])
@@ -163,7 +166,7 @@ def create(event, context):
 
 
 @helper.update
-def update(event, context):
+def update(event, _):
     physical_resource_id = helm_init(event)
     cmd = "helm --home /tmp/.helm upgrade %s %s" % (
         physical_resource_id, build_flags(event['ResourceProperties'], event["RequestType"]))
@@ -174,16 +177,17 @@ def update(event, context):
 
 
 @helper.delete
-def delete(event, context):
+def delete(event, _):
     physical_resource_id = helm_init(event)
-    if not re.search(r'^[0-9]{4}\/[0-9]{2}\/[0-9]{2}\/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
+    if not re.search(r'^[0-9]{4}/[0-9]{2}/[0-9]{2}/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
         try:
             run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
-        except Exception as e:
-            if 'release: "%s" not found' % event['PhysicalResourceId'] in str(e):
+        except Exception as exc:
+            if 'release: "%s" not found' % event['PhysicalResourceId'] in str(exc):
                 logger.warning("release already gone, or never existed")
-            elif 'invalid release name' in str(e):
-                logger.warning("release name invalid, either creation failed, or response not received by CloudFormation")
+            elif 'invalid release name' in str(exc):
+                logger.warning("release name invalid, either creation failed, or response not received by "
+                               "CloudFormation")
             else:
                 raise
     else:
@@ -192,7 +196,7 @@ def delete(event, context):
 
 @helper.poll_create
 @helper.poll_update
-def poll_create_update(event, context):
+def poll_create_update(event, _):
     helm_init(event)
     release_name = helper.Data["PhysicalResourceId"]
     cmd = "helm --home /tmp/.helm status %s" % release_name
