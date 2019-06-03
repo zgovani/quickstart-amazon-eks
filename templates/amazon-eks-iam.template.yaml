@@ -403,6 +403,7 @@ Resources:
                   - 'ec2:DescribeSecurityGroups'
                   - 'ec2:RevokeSecurityGroupEgress'
                   - 'ec2:RevokeSecurityGroupIngress'
+                  - 'ec2:DeleteNetworkInterface'
                 Effect: Allow
                 Resource: "*"
 Outputs:

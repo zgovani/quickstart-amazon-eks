@@ -14,11 +14,16 @@ except Exception as init_exception:
 
 
 def detach_interface(attachment_id):
-    ec2.detach_network_interface(AttachmentId=attachment_id, Force=True)
-    logger.info('Detached attachment [{0}]'.format(attachment_id))
+    logger.info("Detaching %s", attachment_id)
+    try:
+        ec2.detach_network_interface(AttachmentId=attachment_id, Force=True)
+        logger.info('Detached attachment [{0}]'.format(attachment_id))
+    except Exception as detach_error:
+        logger.error(str(detach_error), exc_info=True)
 
 
 def delete_interface(interface_id):
+    logger.info("deleteing %s", interface_id)
     retries = 10
 
     # We need to retry because the detach can take some time and this will fail if you try too quickly after the detach
@@ -27,21 +32,23 @@ def delete_interface(interface_id):
             # Delete the ENI, if successful drop the retry count to 0 so we do not try again
             ec2.delete_network_interface(NetworkInterfaceId=interface_id)
             logger.info('Deleted interface [{0}]'.format(interface_id))
-            retries = 0
+            break
         except ClientError as delete_error:
+            logger.error(str(delete_error), exc_info=True)
             # Get the error code and do not retry on NotFound
             error_code = delete_error.response.get("Error", {}).get("Code", "")
-
             if error_code == 'InvalidNetworkInterfaceID.NotFound':
-                retries = 0
                 logger.info('Interface [{0}] has already been deleted'.format(interface_id))
-            # Default Case
+                break
             else:
                 # If we encounter an error decrement the retry count by 1 and retry after sleeping for 5s
                 retries -= 1
                 logger.info(f'Failed to delete interface [{interface_id}] - retries remaining [{retries}]. '
                             'Error: {delete_error}')
                 time.sleep(5)
+        except Exception as delete_error:
+            logger.error(str(delete_error), exc_info=True)
+            break
 
 
 def get_attachment_id_for_eni(eni):
@@ -90,12 +97,12 @@ def clean_up_enis_for_lambda_function(function_name):
 
             # Print out what we are going to do
             logger.info('Detaching the following attachments [{0}]'.format(",".join(eni_attachment_ids)))
-            logger.info('Deleting the following interfaces [{0}]'.format(",".join(eni_ids)))
 
             # Detach each ENI
             for eni_attachment_id in eni_attachment_ids:
                 detach_interface(eni_attachment_id)
 
+            logger.info('Deleting the following interfaces [{0}]'.format(",".join(eni_ids)))
             # Delete each ENI
             for eni_id in eni_ids:
                 delete_interface(eni_id)
@@ -104,7 +111,8 @@ def clean_up_enis_for_lambda_function(function_name):
 
     # We would rather let the Custom Resource "Delete" than not clean up. Print the error and continue
     except Exception as clean_up_error:
-        logger.error('Failed to cleanup ENIs for function [{0}]. Error: '.format(function_name, clean_up_error))
+        logger.error('Failed to cleanup ENIs for function [{0}]. Error: '.format(function_name, clean_up_error),
+                     exc_info=True)
 
 
 @helper.delete
