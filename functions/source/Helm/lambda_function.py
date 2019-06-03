@@ -8,6 +8,7 @@ import re
 from crhelper import CfnResource
 import logging
 import string
+from time import sleep
 
 
 logger = logging.getLogger(__name__)
@@ -45,10 +46,21 @@ def create_kubeconfig(bucket, key, kms_context):
         os.mkdir("/tmp/.kube/")
     except FileExistsError:
         pass
+    print("s3_client.get_object(Bucket='%s', Key='%s')" % (bucket, key))
     try:
-        enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
-    except Exception as exc:
-        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(exc))
+        retries = 10
+        while True:
+            try:
+                enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
+                break
+            except Exception as e:
+                logger.error(str(e), exc_info=True)
+                if retries == 0:
+                    raise
+                sleep(10)
+                retries -= 1
+    except Exception as e:
+        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
     kubeconf = kms_client.decrypt(
         CiphertextBlob=enc_config,
         EncryptionContext=kms_context

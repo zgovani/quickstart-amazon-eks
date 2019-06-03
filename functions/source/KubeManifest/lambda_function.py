@@ -1,6 +1,7 @@
 import json
 import logging
 import boto3
+import botocore
 import subprocess
 import shlex
 import os
@@ -47,7 +48,17 @@ def create_kubeconfig(bucket, key, kms_context):
         pass
     print("s3_client.get_object(Bucket='%s', Key='%s')" % (bucket, key))
     try:
-        enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
+        retries = 10
+        while True:
+            try:
+                enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
+                break
+            except Exception as e:
+                logger.error(str(e), exc_info=True)
+                if retries == 0:
+                    raise
+                sleep(10)
+                retries -= 1
     except Exception as e:
         raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
     kubeconf = kms_client.decrypt(
