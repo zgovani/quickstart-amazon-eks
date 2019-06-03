@@ -169,6 +169,14 @@ def build_flags(properties, request_type="Create"):
     return "%s %s %s %s %s" % (properties['Chart'], val_file, set_vals, version, name)
 
 
+def _trim_event_for_poll(event):
+    needed_keys = ['Chart', 'RepoUrl', 'Namespace']
+    for prop in event['ResourceProperties'].keys():
+        if prop not in needed_keys:
+            del event['ResourceProperties'][prop]
+    return event
+
+
 @helper.create
 def create(event, _):
     helm_init(event)
@@ -177,6 +185,7 @@ def create(event, _):
     output = run_command(cmd)
     response_data = parse_install_output(output)
     physical_resource_id = response_data["Name"]
+    helper._event = _trim_event_for_poll(helper._event)
     return physical_resource_id
 
 
@@ -188,6 +197,7 @@ def update(event, _):
     output = run_command(cmd)
     response_data = parse_install_output(output)
     helper.Data.update(response_data)
+    helper._event = _trim_event_for_poll(helper._event)
     return physical_resource_id
 
 
