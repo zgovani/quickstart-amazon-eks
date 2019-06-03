@@ -76,9 +76,19 @@ def parse_install_output(output):
         if resources_block:
             if line.startswith('==>'):
                 count = 0
-                resource_type = line.split()[1].split('/')[1].replace('(related)', '')
+                if '==> MISSING' in line:
+                    resource_type = ""
+                else:
+                    resource_type = line.split()[1].split('/')[1].replace('(related)', '')
             elif resource_type and not line.startswith('NAME') and line:
-                data[resource_type + str(count)] = line.split()[0]
+                if ', Resource=' in line:
+                    new_resource_type = line.split()[1].replace('Resource=', '')
+                    if resource_type != new_resource_type:
+                        count = 0
+                        resource_type = new_resource_type
+                    data[resource_type + str(count)] = line.split()[2]
+                else:
+                    data[resource_type + str(count)] = line.split()[0]
                 count += 1
     return data
 
