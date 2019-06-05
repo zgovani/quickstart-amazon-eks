@@ -1,6 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Deploys an EKS cluster into an existing VPC (qs-1p7nknoht)
 Metadata:
+  LintSpellExclude:
+    - Kubernetes
+    - ARNs
+    - Resource Names
+    - autoscaler
+    - IOPS
+    - EfsStorageClass
+    - dcd
+    - vpc-0343606e
+    - Lambda
+    - maxIO
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -33,6 +44,14 @@ Metadata:
           - QSS3BucketName
           - QSS3KeyPrefix
           - LambdaZipsBucketName
+      - Label:
+          default: Optional Kubernetes add-ons
+        Parameters:
+          - ClusterAutoScaler
+          - EfsStorageClass
+          - EfsPerformanceMode
+          - EfsThroughputMode
+          - EfsProvisionedThroughputInMibps
     ParameterLabels:
       KeyPairName:
         default: SSH key name
@@ -70,6 +89,16 @@ Metadata:
         default: Kubernetes version
       LambdaZipsBucketName:
         default: Lambda zips bucket name
+      ClusterAutoScaler:
+        default: Cluster autoscaler
+      EfsStorageClass:
+        default: EFS storage class
+      EfsPerformanceMode:
+        default: EFS performance mode
+      EfsThroughputMode:
+        default: EFS throughput mode
+      EfsProvisionedThroughputInMibps:
+        default: EFS provisioned throughput in Mibps
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -207,7 +236,7 @@ Parameters:
     Default: "1.12"
     Description: The Kubernetes control plane version.
   LambdaZipsBucketName:
-    Description: '[OPTIONAL] The name of the S3 bucket where the Lambda .zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
+    Description: '[OPTIONAL] The name of the S3 bucket where the Lambda zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
     Type: String
     Default: ''
   VPCID:
@@ -231,6 +260,31 @@ Parameters:
   PrivateSubnet3ID:
     Type: "AWS::EC2::Subnet::Id"
     Description: The ID of the private subnet in Availability Zone 3 in your existing VPC (e.g., subnet-abd39039)
+  ClusterAutoScaler:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Enable Kubernetes cluster autoscaler.
+  EfsStorageClass:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Enable EFS storage class, will create the required EFS volume.
+  EfsPerformanceMode:
+    Type: String
+    AllowedValues: [ generalPurpose, maxIO ]
+    Default: generalPurpose
+    Description: maxIO mode provides greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
+  EfsThroughputMode:
+    Type: String
+    AllowedValues: [ bursting, provisioned ]
+    Default: bursting
+    Description: Configure EFS for bursting throughput or provisioned. Only has an effect when EfsStorageClass is enabled.
+  EfsProvisionedThroughputInMibps:
+    Type: Number
+    MinValue: 0
+    Default: 0
+    Description: Configure EFS throughput in Mibps. Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
 Rules:
   EKSSupport:
     Assertions:
@@ -275,7 +329,11 @@ Resources:
         AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
         VPCID: !Ref VPCID
         KubernetesVersion: !Ref KubernetesVersion
-        ProvisionClusterAutoScaler: Disabled
+        ProvisionClusterAutoScaler: !Ref ClusterAutoScaler
+        EfsStorageClass: !Ref EfsStorageClass
+        EfsPerformanceMode: !Ref EfsPerformanceMode
+        EfsThroughputMode: !Ref EfsThroughputMode
+        EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath

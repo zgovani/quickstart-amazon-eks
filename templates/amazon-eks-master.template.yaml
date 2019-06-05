@@ -1,6 +1,15 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Deploys an EKS cluster in a new VPC (qs-1p7nknoht)
 Metadata:
+  LintSpellExclude:
+    - Kubernetes
+    - ARNs
+    - Resource Names
+    - autoscaler
+    - IOPS
+    - EfsStorageClass
+    - Lambda
+    - maxIO
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -28,6 +37,14 @@ Metadata:
           - NodeVolumeSize
           - AdditionalEKSAdminArns
           - KubernetesVersion
+      - Label:
+          default: Optional Kubernetes add-ons
+        Parameters:
+          - ClusterAutoScaler
+          - EfsStorageClass
+          - EfsPerformanceMode
+          - EfsThroughputMode
+          - EfsProvisionedThroughputInMibps
       - Label:
           default: AWS Quick Start configuration
         Parameters:
@@ -73,6 +90,16 @@ Metadata:
         default: Kubernetes version
       LambdaZipsBucketName:
         default: Lambda zips bucket name
+      ClusterAutoScaler:
+        default: Cluster autoscaler
+      EfsStorageClass:
+        default: EFS storage class
+      EfsPerformanceMode:
+        default: EFS performance mode
+      EfsThroughputMode:
+        default: EFS throughput mode
+      EfsProvisionedThroughputInMibps:
+        default: EFS provisioned throughput in Mibps
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -144,7 +171,7 @@ Parameters:
   RemoteAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
-    Description: The CIDR IP range that is permitted to access the instances We recommend
+    Description: The CIDR IP range that is permitted to access the instances. We recommend
       that you set this value to a trusted IP range.
     Type: String
   VPCCIDR:
@@ -261,9 +288,34 @@ Parameters:
     Default: "1.12"
     Description: The Kubernetes control plane version.
   LambdaZipsBucketName:
-    Description: '[OPTIONAL] The name of the S3 bucket where the Lambda .zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
+    Description: '[OPTIONAL] The name of the S3 bucket where the Lambda zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
     Type: String
     Default: ''
+  ClusterAutoScaler:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Enable Kubernetes cluster autoscaler.
+  EfsStorageClass:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Enable EFS storage class, will create the required EFS volume.
+  EfsPerformanceMode:
+    Type: String
+    AllowedValues: [ generalPurpose, maxIO ]
+    Default: generalPurpose
+    Description: maxIO mode provides greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
+  EfsThroughputMode:
+    Type: String
+    AllowedValues: [ bursting, provisioned ]
+    Default: bursting
+    Description: Configure EFS for bursting throughput or provisioned. Only has an effect when EfsStorageClass is enabled.
+  EfsProvisionedThroughputInMibps:
+    Type: Number
+    MinValue: 0
+    Default: 0
+    Description: Configure EFS throughput in Mibps. Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
 Rules:
   EKSSupport:
     Assertions:
@@ -325,7 +377,11 @@ Resources:
         AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
         VPCID: !GetAtt VPCStack.Outputs.VPCID
         KubernetesVersion: !Ref KubernetesVersion
-        ProvisionClusterAutoScaler: Disabled
+        ProvisionClusterAutoScaler: !Ref ClusterAutoScaler
+        EfsStorageClass: !Ref EfsStorageClass
+        EfsPerformanceMode: !Ref EfsPerformanceMode
+        EfsThroughputMode: !Ref EfsThroughputMode
+        EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath
