@@ -19,3 +19,9 @@ tests:
   quickstart-amazon-eks-defaults:
     parameter_input: amazon-eks-defaults.json
     template_file: amazon-eks-master.template.yaml
+  quickstart-amazon-eks-efs:
+    parameter_input: amazon-eks-efs.json
+    template_file: amazon-eks-master.template.yaml
+  quickstart-amazon-eks-cluster-autoscaler:
+    parameter_input: amazon-eks-cluster-autoscaler.json
+    template_file: amazon-eks-master.template.yaml
