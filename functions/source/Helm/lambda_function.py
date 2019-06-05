@@ -183,9 +183,12 @@ def build_flags(properties, request_type="Create"):
 
 def _trim_event_for_poll(event):
     needed_keys = ['Chart', 'RepoUrl', 'Namespace']
+    trimmable = []
     for prop in event['ResourceProperties'].keys():
         if prop not in needed_keys:
-            del event['ResourceProperties'][prop]
+            trimmable.append(prop)
+    for key in trimmable:
+        del event['ResourceProperties'][key]
     return event
 
 
