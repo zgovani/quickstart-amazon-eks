@@ -274,7 +274,7 @@ Parameters:
     Type: String
     AllowedValues: [ generalPurpose, maxIO ]
     Default: generalPurpose
-    Description: maxIO mode provides greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
+    Description: Selecting maxIO mode provides greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
   EfsThroughputMode:
     Type: String
     AllowedValues: [ bursting, provisioned ]
