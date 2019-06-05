@@ -182,7 +182,7 @@ def build_flags(properties, request_type="Create"):
 
 
 def _trim_event_for_poll(event):
-    needed_keys = ['Chart', 'RepoUrl', 'Namespace']
+    needed_keys = ['Chart', 'RepoUrl', 'Namespace', 'KubeConfigPath']
     trimmable = []
     for prop in event['ResourceProperties'].keys():
         if prop not in needed_keys:
