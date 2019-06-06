@@ -262,6 +262,9 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), dots(.) and
       forward slash (/).
     Type: String
+  CustomAmiId:
+    Type: String
+    Default: ""
 Conditions:
   MaxNodes: !Not [ !Equals [ !Ref MaxNumberOfNodes, "" ] ]
   AmznOS: !Equals
@@ -276,6 +279,7 @@ Conditions:
   IsSingleInstance: !Equals
     - !Ref NumberOfNodes
     - 1
+  UseCustomAmi: !Not [ !Equals [ !Ref CustomAmiId, "" ] ]
 Mappings:
   K8sVersionMap:
     "1.12":
@@ -717,19 +721,22 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !FindInMap
-        - AWSAMIRegionMap
-        - !Ref "AWS::Region"
+      ImageId: !If
+        - UseCustomAmi
+        - !Ref CustomAmiId
         - !FindInMap
-          - OStoK8sVersionMap
-          - !Ref NodeAMIOS
+          - AWSAMIRegionMap
+          - !Ref "AWS::Region"
           - !FindInMap
-            - K8sVersionMap
-            - !Ref KubernetesVersion
+            - OStoK8sVersionMap
+            - !Ref NodeAMIOS
             - !FindInMap
-              - InstanceTypes
-              - !Ref NodeInstanceType
-              - Type
+              - K8sVersionMap
+              - !Ref KubernetesVersion
+              - !FindInMap
+                - InstanceTypes
+                - !Ref NodeInstanceType
+                - Type
       InstanceType: !Ref NodeInstanceType
       KeyName: !Ref KeyPairName
       SecurityGroups:
