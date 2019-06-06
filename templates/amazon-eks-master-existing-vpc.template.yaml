@@ -264,27 +264,27 @@ Parameters:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
     Default: Disabled
-    Description: Enable Kubernetes cluster autoscaler.
+    Description: Choose Enabled to enable Kubernetes cluster autoscaler.
   EfsStorageClass:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
     Default: Disabled
-    Description: Enable EFS storage class, will create the required EFS volume.
+    Description: Choose Enabled to enable EFS storage class, which will create the required EFS volume.
   EfsPerformanceMode:
     Type: String
     AllowedValues: [ generalPurpose, maxIO ]
     Default: generalPurpose
-    Description: Selecting maxIO mode provides greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
+    Description: Choose maxIO mode to provide greater IOPS with an increased latency. Only has an effect when EfsStorageClass is enabled.
   EfsThroughputMode:
     Type: String
     AllowedValues: [ bursting, provisioned ]
     Default: bursting
-    Description: Configure EFS for bursting throughput or provisioned. Only has an effect when EfsStorageClass is enabled.
+    Description: Choose provisioned for throughput that is not dependent on the amount of data stored in the file system. Only has an effect when EfsStorageClass is enabled.
   EfsProvisionedThroughputInMibps:
     Type: Number
     MinValue: 0
     Default: 0
-    Description: Configure EFS throughput in Mibps. Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
+    Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
 Rules:
   EKSSupport:
     Assertions:
