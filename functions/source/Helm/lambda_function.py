@@ -9,6 +9,7 @@ from crhelper import CfnResource
 import logging
 import string
 from time import sleep
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,6 @@ def create_kubeconfig(bucket, key, kms_context):
         os.mkdir("/tmp/.kube/")
     except FileExistsError:
         pass
-    print("s3_client.get_object(Bucket='%s', Key='%s')" % (bucket, key))
     try:
         retries = 10
         while True:
@@ -136,6 +136,10 @@ def truncate(response_data):
 
 
 def helm_init(event):
+    try:
+        helper.Data.update({"StartTimestamp": event['CrHelperData']['StartTimestamp']})
+    except KeyError:
+        helper.Data.update({"StartTimestamp": str(datetime.now().timestamp())})
     physical_resource_id = None
     if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
         raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
@@ -182,7 +186,7 @@ def build_flags(properties, request_type="Create"):
 
 
 def _trim_event_for_poll(event):
-    needed_keys = ['Chart', 'RepoUrl', 'Namespace', 'KubeConfigPath', 'KubeConfigKmsContext']
+    needed_keys = ['Chart', 'RepoUrl', 'Namespace', 'KubeConfigPath', 'KubeConfigKmsContext', 'TimeoutMinutes']
     trimmable = []
     for prop in event['ResourceProperties'].keys():
         if prop not in needed_keys:
@@ -243,6 +247,7 @@ def poll_create_update(event, _):
     output = run_command(cmd)
     response_data = parse_install_output(output)
     ns = event['ResourceProperties']["Namespace"]
+    unready = []
     for t in response_data.keys():
         k8s_type = t.rstrip(string.digits)
         if k8s_type.lower() in ["pod"]:
@@ -251,14 +256,32 @@ def poll_create_update(event, _):
             logger.debug(output)
             status = json.loads(output)["status"]
             if status['phase'] == 'Pending':
-                return None
+                msg = "%s/%s" % (k8s_type, k8s_name)
+                unready.append(msg)
             if status['phase'] != "Succeeded":
                 for s in status["containerStatuses"]:
                     if not s["ready"]:
-                        return None
-    # Return a resource id or True to indicate that creation is complete. if True is returned an id will be generated
+                        msg = "%s/%s" % (k8s_type, k8s_name)
+                        unready.append(msg)
+    if unready:
+        return poll_timeout(event, unready, release_name)
     helper.Data.update(truncate(response_data))
     return release_name
+
+
+def poll_timeout(event, unready, release_name):
+    start_time = datetime.fromtimestamp(float(helper.Data["StartTimestamp"]))
+    total_duration_seconds = (datetime.now() - start_time).total_seconds()
+    if 'TimeoutMinutes' not in event['ResourceProperties'].keys():
+        timeout = 56 * 60
+    else:
+        timeout = int(event['ResourceProperties']['TimeoutMinutes']) * 60
+    if total_duration_seconds >= timeout:
+        logger.error("Polling about to timeout, sending failure to cloudformation")
+
+        helper.PhysicalResourceId = release_name
+        raise Exception("the following kubernetes resources were not ready before the timeout %s" % unready)
+    return None
 
 
 def lambda_handler(event, context):
