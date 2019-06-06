@@ -45,7 +45,7 @@ Metadata:
           - QSS3KeyPrefix
           - LambdaZipsBucketName
       - Label:
-          default: Optional Kubernetes add-ons
+          default: Optional Kubernetes add-ins
         Parameters:
           - ClusterAutoScaler
           - EfsStorageClass
