@@ -94,7 +94,7 @@ Resources:
     Properties:
       ServiceToken: !Ref GetCallerArnLambdaArn
   AddCallerUserToClusterAsAdmin:
-    DependsOn: EksNodeUser
+    DependsOn: [ EksNodeUser, AdditionalAdminUsers ]
     Type: "Custom::KubeManifest"
     Version: '1.0'
     Properties:

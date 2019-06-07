@@ -430,12 +430,8 @@ Resources:
                 Effect: Allow
                 Resource: "arn:aws:logs:*:*:*"
               - Action:
-                  - 'ec2:DescribeNetworkInterfaces'
-                  - 'ec2:DescribeSecurityGroups'
-                  - 'ec2:RevokeSecurityGroupEgress'
-                  - 'ec2:RevokeSecurityGroupIngress'
-                  - 'ec2:DeleteNetworkInterface'
-                  - 'ec2:DetachNetworkInterface'
+                  - 'cloudformation:DescribeStacks'
+                  - 'cloudtrail:LookupEvents'
                 Effect: Allow
                 Resource: "*"
 Outputs:
