@@ -313,6 +313,7 @@ Resources:
         KubeConfigUploadRoleArn: !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn
         CleanupLoadBalancersRoleArn: !GetAtt IamStack.Outputs.CleanupLoadBalancersRoleArn
         CleanupSecurityGroupDependenciesRoleArn: !GetAtt IamStack.Outputs.CleanupSecurityGroupDependenciesRoleArn
+        GetCallerArnRoleArn: !GetAtt IamStack.Outputs.GetCallerArnRoleArn
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
     Type: AWS::CloudFormation::Stack
@@ -379,6 +380,7 @@ Resources:
         KubernetesVersion: !Ref KubernetesVersion
         KmsContext: !Ref KubeConfigKmsContext
         CleanupLoadBalancersLambdaArn: !GetAtt FunctionStack.Outputs.CleanupLoadBalancersLambdaArn
+        GetCallerArnLambdaArn: !GetAtt FunctionStack.Outputs.GetCallerArnLambdaArn
   KmsKey:
     Type: "AWS::KMS::Key"
     Properties:

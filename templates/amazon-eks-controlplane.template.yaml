@@ -15,6 +15,8 @@ Parameters:
     Type: String
   CleanupLoadBalancersLambdaArn:
     Type: String
+  GetCallerArnLambdaArn:
+    Type: String
   KubeConfigUploadRoleArn:
     Type: String
   KubeConfigS3Bucket:
@@ -87,6 +89,22 @@ Resources:
     Properties:
       ServiceToken: !Ref CleanupLoadBalancersLambdaArn
       ClusterName: !Ref EKS
+  CallerArn:
+    Type: Custom::GetCallerArn
+    Properties:
+      ServiceToken: !Ref GetCallerArnLambdaArn
+  AddCallerUserToClusterAsAdmin:
+    DependsOn: EksNodeUser
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref KubeManifestLambdaArn
+      KubeConfigPath: !Sub "s3://${KubeConfigS3Bucket}/${KubeConfigS3Key}"
+      KubeConfigKmsContext: !Ref KmsContext
+      Users:
+        Arns: [!GetAtt CallerArn.Arn]
+        Groups: [ "system:masters" ]
+      Username: !Ref CallerArn
 Outputs:
   EksArn:
     Value: !GetAtt EKS.Arn

@@ -50,6 +50,8 @@ Parameters:
     Type: String
   CleanupSecurityGroupDependenciesRoleArn:
     Type: String
+  GetCallerArnRoleArn:
+    Type: String
 Conditions:
   CreateDeleteBucketContentsLambda: !Equals
     - !Ref 'DeleteLambdaZipsBucketContents'
@@ -75,6 +77,7 @@ Resources:
       - functions/packages/kubectlLayer/lambda.zip
       - functions/packages/helmLayer/lambda.zip
       - functions/packages/crhelperLayer/lambda.zip
+      - functions/packages/GetCallerArn/lambda.zip
   KubectlLayer:
     DependsOn: CopyZips
     Type: AWS::Lambda::LayerVersion
@@ -244,6 +247,19 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/DeleteBucketContents/lambda.zip'
+  GetCallerArnLambda:
+    DependsOn: CopyZips
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Ref GetCallerArnRoleArn
+      Runtime: python3.7
+      Timeout: 900
+      Layers: [!Ref CrhelperLayer]
+      Code:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/GetCallerArn/lambda.zip'
   KubeConfigUploadLambda:
     DependsOn: CopyZips
     Type: AWS::Lambda::Function
@@ -314,3 +330,5 @@ Outputs:
     Value: !GetAtt CleanupLoadBalancersLambda.Arn
   CleanupSecurityGroupDependenciesLambdaArn:
     Value: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn
+  GetCallerArnLambdaArn:
+    Value: !GetAtt GetCallerArnLambda.Arn

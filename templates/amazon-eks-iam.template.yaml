@@ -407,6 +407,37 @@ Resources:
                   - 'ec2:DetachNetworkInterface'
                 Effect: Allow
                 Resource: "*"
+  GetCallerArnRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: LambdaRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Effect: Allow
+                Resource: "arn:aws:logs:*:*:*"
+              - Action:
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:DescribeSecurityGroups'
+                  - 'ec2:RevokeSecurityGroupEgress'
+                  - 'ec2:RevokeSecurityGroupIngress'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:DetachNetworkInterface'
+                Effect: Allow
+                Resource: "*"
 Outputs:
   DeleteBucketContentsRoleArn:
     Value: !If [ CreateDeleteBucketContentsRole, !GetAtt DeleteBucketContentsRole.Arn, "" ]
@@ -434,3 +465,5 @@ Outputs:
     Value: !GetAtt CleanupLoadBalancersRole.Arn
   CleanupSecurityGroupDependenciesRoleArn:
     Value: !GetAtt CleanupSecurityGroupDependenciesRole.Arn
+  GetCallerArnRoleArn:
+    Value: !GetAtt GetCallerArnRole.Arn
