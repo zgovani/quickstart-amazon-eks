@@ -29,7 +29,8 @@ def run_command(command):
                 output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
                 logger.debug(output)
             except subprocess.CalledProcessError as exc:
-                logger.error("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
+                logger.error("Command failed with exit code %s, stderr: %s" % (exc.returncode,
+                                                                               exc.output.decode("utf-8")))
                 raise Exception(exc.output.decode("utf-8"))
             return output
         except Exception as e:
