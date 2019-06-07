@@ -126,7 +126,6 @@ Resources:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupSecurityGroupDependencies/lambda.zip'
   LambdaSGCleanup:
-    DependsOn: [ HelmLambda, KubeManifestLambda, KubeGetLambda ]
     Type: Custom::LambdaSGCleanup
     Properties:
       ServiceToken: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn
@@ -161,7 +160,7 @@ Resources:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CfnStackAssumeRole/lambda.zip'
   HelmLambda:
-    DependsOn: CopyZips
+    DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
@@ -177,7 +176,7 @@ Resources:
         SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
         SubnetIds: !Ref EKSSubnetIds
   KubeManifestLambda:
-    DependsOn: CopyZips
+    DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
@@ -193,7 +192,7 @@ Resources:
         SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
         SubnetIds: !Ref EKSSubnetIds
   KubeGetLambda:
-    DependsOn: CopyZips
+    DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
