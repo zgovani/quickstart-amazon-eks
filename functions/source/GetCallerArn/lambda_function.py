@@ -42,13 +42,21 @@ def get_caller_arn(stack_id):
                 EndTime=create_time + timedelta(minutes=15)
             )
             if len(response['Events']) > 0:
-                return json.loads(response['Events'][0]['CloudTrailEvent'])['userIdentity']['arn']
+                return sts_to_role(json.loads(response['Events'][0]['CloudTrailEvent'])['userIdentity']['arn'])
             logger.info('Event not in cloudtrail yet, %s retries left' % str(retries))
         except Exception as e:
             logger.error(str(e), exc_info=True)
         if retries == 0:
             return "NotFound"
         sleep(15)
+
+
+def sts_to_role(sts_arn):
+    if not sts_arn.startswith('arn:aws:sts::') or not sts_arn.split('/')[0].endswith('assumed-role'):
+        return sts_arn
+    acct_id = sts_arn.split(":")[4]
+    role_name = sts_arn.split('/')[1]
+    return f"arn:aws:iam::{acct_id}:role/{role_name}"
 
 
 @helper.create
