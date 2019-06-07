@@ -23,9 +23,9 @@ tests:
     parameter_input: amazon-eks-efs.json
     template_file: amazon-eks-master.template.yaml
     regions:
-      us-west-2
+      - us-west-2
   quickstart-amazon-eks-cluster-autoscaler:
     parameter_input: amazon-eks-cluster-autoscaler.json
     template_file: amazon-eks-master.template.yaml
     regions:
-      eu-central-1
+      - eu-central-1
