@@ -172,9 +172,6 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/Helm/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref EKSSubnetIds
   KubeManifestLambda:
     DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
@@ -188,9 +185,6 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref EKSSubnetIds
   KubeGetLambda:
     DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
@@ -204,9 +198,6 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeGet/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref EKSSubnetIds
   DeleteBucketContentsLambda:
     DependsOn: CopyZips
     Condition: CreateDeleteBucketContentsLambda
