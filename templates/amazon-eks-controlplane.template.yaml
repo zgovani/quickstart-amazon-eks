@@ -61,7 +61,7 @@ Resources:
         Username: 'system:node:{{EC2PrivateDNSName}}'
   AdditionalAdminUsers:
     Condition: AddUsers
-    DependsOn: EksNodeUser
+    DependsOn: [ EksNodeUser, AddCallerUserToClusterAsAdmin ]
     Type: "Custom::KubeManifest"
     Version: '1.0'
     Properties:
@@ -94,7 +94,7 @@ Resources:
     Properties:
       ServiceToken: !Ref GetCallerArnLambdaArn
   AddCallerUserToClusterAsAdmin:
-    DependsOn: [ EksNodeUser, AdditionalAdminUsers ]
+    DependsOn: EksNodeUser
     Type: "Custom::KubeManifest"
     Version: '1.0'
     Properties:
