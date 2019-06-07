@@ -81,4 +81,4 @@ Resources:
       Values:
         efsProvisioner.efsFileSystemId: !Ref EFSFileSystem
         efsProvisioner.awsRegion: !Ref 'AWS::Region'
-        efsProvisioner.provisionerName: kubernetes.io/aws-efs
+        efsProvisioner.provisionerName: aws-quickstart/aws-efs
