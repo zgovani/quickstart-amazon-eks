@@ -1,7 +1,6 @@
 import json
 import logging
 import boto3
-import botocore
 import subprocess
 import shlex
 import os
@@ -26,17 +25,17 @@ def run_command(command):
     while True:
         try:
             try:
-                print("executing command: %s" % command)
+                logger.debug("executing command: %s" % command)
                 output = subprocess.check_output(shlex.split(command), stderr=subprocess.STDOUT).decode("utf-8")
-                print(output)
+                logger.debug(output)
             except subprocess.CalledProcessError as exc:
-                print("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
+                logger.error("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
                 raise Exception(exc.output.decode("utf-8"))
             return output
         except Exception as e:
             if 'Unable to connect to the server' not in str(e) or retries >= 5:
                 raise
-            print("{}, retrying in 5 seconds").format(e)
+            logger.debug("{}, retrying in 5 seconds").format(e)
             sleep(5)
             retries += 1
 
@@ -46,7 +45,6 @@ def create_kubeconfig(bucket, key, kms_context):
         os.mkdir("/tmp/.kube/")
     except FileExistsError:
         pass
-    print("s3_client.get_object(Bucket='%s', Key='%s')" % (bucket, key))
     try:
         retries = 10
         while True:
@@ -209,25 +207,26 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
     if 'mapUsers' in aws_auth['data'].keys():
         maps['user'] = yaml.safe_load(aws_auth['data']['mapUsers'])
     for arn in arns:
-        iam_type = arn.split(':')[5].split("/")[0]
-        entry = {
-            "%sarn" % iam_type: arn,
-            "username": username if username else arn,
-            "groups": groups
-        }
-        if not delete:
-            maps[iam_type].append(entry)
-        else:
-            maps[iam_type] = [value for value in maps[iam_type] if value != entry]
+        if arn != 'NotFound':
+            iam_type = arn.split(':')[5].split("/")[0]
+            entry = {
+                "%sarn" % iam_type: arn,
+                "username": username if username else arn,
+                "groups": groups
+            }
+            if not delete:
+                maps[iam_type].append(entry)
+            else:
+                maps[iam_type] = [value for value in maps[iam_type] if value != entry]
     if maps['role']:
         aws_auth['data']['mapRoles'] = yaml.dump(maps['role'], default_flow_style=False)
     if maps['user']:
         aws_auth['data']['mapUsers'] = yaml.dump(maps['user'], default_flow_style=False)
-    print(yaml.dump(aws_auth, default_flow_style=False))
+    logger.debug(yaml.dump(aws_auth, default_flow_style=False))
     write_manifest(aws_auth, '/tmp/aws-auth.json')
     kw = 'create' if new else 'replace'
     outp = run_command("kubectl %s -f /tmp/aws-auth.json --save-config" % kw)
-    print(outp)
+    logger.debug(outp)
 
 
 def handler_init(event):
