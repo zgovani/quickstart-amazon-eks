@@ -286,32 +286,6 @@ Resources:
                 Resource: "*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-  LambdaCleanUpFunctionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action: ['sts:AssumeRole']
-            Effect: Allow
-            Principal:
-              Service: [lambda.amazonaws.com]
-        Version: '2012-10-17'
-      Path: /
-      Policies:
-        - PolicyName: LambdaRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Effect: Allow
-                Resource: "arn:aws:logs:*:*:*"
-              - Action:
-                  - 'ec2:*'
-                Effect: Allow
-                Resource: "*"
   KubeConfigUploadRole:
     Type: AWS::IAM::Role
     Properties:
@@ -446,8 +420,6 @@ Outputs:
     Value: !GetAtt ControlPlaneRole.Arn
   ControlPlaneProvisionRoleArn:
     Value: !GetAtt ControlPlaneProvisionRole.Arn
-  LambdaCleanUpFunctionRoleArn:
-    Value: !GetAtt LambdaCleanUpFunctionRole.Arn
   NodeInstanceProfile:
     Value: !Ref NodeInstanceProfile
   NodeInstanceRoleArn:

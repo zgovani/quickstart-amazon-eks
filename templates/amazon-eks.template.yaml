@@ -307,7 +307,6 @@ Resources:
         EKSSubnetIds: !Sub "${PrivateSubnet1ID},${PrivateSubnet2ID},${PrivateSubnet3ID}"
         DeleteBucketContentsRoleArn: !GetAtt IamStack.Outputs.DeleteBucketContentsRoleArn
         QuickStartStackMakerRoleArn: !GetAtt IamStack.Outputs.QuickStartStackMakerRoleArn
-        LambdaCleanUpFunctionRoleArn: !GetAtt IamStack.Outputs.LambdaCleanUpFunctionRoleArn
         DeleteLambdaZipsBucketContents: !If [ CreateLambdaZipsBucket, "True", "False" ]
         VPCID: !Ref VPCID
         KubeConfigUploadRoleArn: !GetAtt IamStack.Outputs.KubeConfigUploadRoleArn

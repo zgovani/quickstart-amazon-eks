@@ -27,8 +27,6 @@ Parameters:
     Type: String
   EKSProvisionRoleArn:
     Type: String
-  LambdaCleanUpFunctionRoleArn:
-    Type: String
   VPCID:
     Type: AWS::EC2::VPC::Id
   EKSSubnetIds:
@@ -70,7 +68,6 @@ Resources:
       - functions/packages/CfnStackAssumeRole/lambda.zip
       - functions/packages/KubeManifest/lambda.zip
       - functions/packages/KubeGet/lambda.zip
-      - functions/packages/LambdaEniCleanup/lambda.zip
       - functions/packages/KubeConfigUpload/lambda.zip
       - functions/packages/CleanupLoadBalancers/lambda.zip
       - functions/packages/CleanupSecurityGroupDependencies/lambda.zip
@@ -128,36 +125,14 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupSecurityGroupDependencies/lambda.zip'
-  VPCLambdaCleanup:
-    Type: Custom::LambdaCleanup
-    Properties:
-      ServiceToken: !GetAtt VPCLambdaCleanupLambdaFunction.Arn
-      Region: !Ref "AWS::Region"
-      LambdaFunctionNames:
-      - !Ref KubeManifestLambda
-      - !Ref HelmLambda
-      - !Ref KubeGetLambda
   LambdaSGCleanup:
-    DependsOn: VPCLambdaCleanup
+    DependsOn: [ HelmLambda, KubeManifestLambda, KubeGetLambda ]
     Type: Custom::LambdaSGCleanup
     Properties:
       ServiceToken: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn
       Region: !Ref "AWS::Region"
       SecurityGroups:
         - !Ref EKSLambdaSecurityGroup
-  VPCLambdaCleanupLambdaFunction:
-    DependsOn: CopyZips
-    Type: "AWS::Lambda::Function"
-    Properties:
-      Handler: lambda_function.lambda_handler
-      MemorySize: 128
-      Role: !Ref LambdaCleanUpFunctionRoleArn
-      Runtime: python3.7
-      Timeout: 900
-      Layers: [!Ref CrhelperLayer]
-      Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/LambdaEniCleanup/lambda.zip'
   EKSLambdaSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
