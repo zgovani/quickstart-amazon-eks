@@ -267,11 +267,14 @@ EOF
     fi
 
     if [[ "${release}" == "SLES" ]]; then
+        zypper install --non-interactive bash-completion
         echo "0 0 * * * zypper patch --non-interactive" > ~/mycron
     elif [[ "${release}" == "Ubuntu" ]]; then
         apt-get install -y unattended-upgrades
+        apt-get install -y bash-completion
         echo "0 0 * * * unattended-upgrades -d" > ~/mycron
     else
+        yum install -y bash-completion
         echo "0 0 * * * yum -y update --security" > ~/mycron
     fi
 
@@ -424,6 +427,7 @@ function install_kubernetes_client_tools() {
     retry_command 20 curl --retry 5 -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin/
+    echo "source <(kubectl completion bash)" >> ~/.bashrc
     retry_command 20 curl --retry 5 -o helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.12.2-linux-amd64.tar.gz
     tar -xvf helm.tar.gz
     chmod +x ./linux-amd64/helm
