@@ -273,8 +273,8 @@ EOF
         apt-get install -y unattended-upgrades
         apt-get install -y bash-completion
         echo "0 0 * * * unattended-upgrades -d" > ~/mycron
-    else
-        yum install -y bash-completion
+    elif [[ "${release}" == "CentOS" ]]; then
+        yum install -y bash-completion --enablerepo=epel
         echo "0 0 * * * yum -y update --security" > ~/mycron
     fi
 
