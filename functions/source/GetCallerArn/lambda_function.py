@@ -55,6 +55,9 @@ def sts_to_role(sts_arn):
     if not sts_arn.startswith('arn:aws:sts::') or not sts_arn.split('/')[0].endswith('assumed-role'):
         return sts_arn
     acct_id = sts_arn.split(":")[4]
+    if len(sts_arn.split('/')) < 2:
+        logger.error(f"failed to parse calling arn {sts_arn}")
+        return "NotFound"
     role_name = sts_arn.split('/')[1]
     return f"arn:aws:iam::{acct_id}:role/{role_name}"
 
