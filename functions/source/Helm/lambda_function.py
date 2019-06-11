@@ -37,6 +37,9 @@ def run_command(command):
         logger.debug("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
         err = Exception(exc.output.decode("utf-8"))
     if err:
+        if "Error: context deadline exceeded" in err:
+            logger.error(f'retying command "{command}" as it failed with error: {err}')
+            return run_command(command)
         raise err
     else:
         return output
@@ -199,7 +202,6 @@ def _trim_event_for_poll(event):
 @helper.create
 def create(event, _):
     helm_init(event)
-
     cmd = "helm --home /tmp/.helm install %s" % build_flags(event['ResourceProperties'])
     output = run_command(cmd)
     response_data = parse_install_output(output)
