@@ -276,6 +276,8 @@ EOF
     elif [[ "${release}" == "CentOS" ]]; then
         yum install -y bash-completion --enablerepo=epel
         echo "0 0 * * * yum -y update --security" > ~/mycron
+    else
+        echo "0 0 * * * yum -y update --security" > ~/mycron
     fi
 
     crontab ~/mycron
