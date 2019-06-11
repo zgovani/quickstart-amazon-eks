@@ -64,10 +64,15 @@ def sts_to_role(sts_arn):
 
 @helper.create
 def create(event, _):
-    helper.Data['Arn'] = get_caller_arn(event['StackId'])
-    if len(helper.Data['Arn']) < 2:
-        return helper.Data['Arn']
-    return helper.Data['Arn'].split('/')[1]
+    try:
+        helper.Data['Arn'] = get_caller_arn(event['StackId'])
+        if len(helper.Data['Arn']) < 2:
+            return helper.Data['Arn']
+        return helper.Data['Arn'].split('/')[1]
+    except Exception:
+        logger.error("unexpected error", exc_info=True)
+        helper.Data['Arn'] = "NotFound"
+        return "NotFound"
 
 
 def lambda_handler(event, context):
