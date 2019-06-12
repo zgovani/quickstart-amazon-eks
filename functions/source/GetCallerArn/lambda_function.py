@@ -52,6 +52,7 @@ def get_caller_arn(stack_id):
 
 
 def sts_to_role(sts_arn):
+    logger.debug(f"arn from cloudtrail: {sts_arn}")
     if not sts_arn.startswith('arn:aws:sts::') or not sts_arn.split('/')[0].endswith('assumed-role'):
         return sts_arn
     acct_id = sts_arn.split(":")[4]
@@ -65,10 +66,11 @@ def sts_to_role(sts_arn):
 @helper.create
 def create(event, _):
     try:
-        helper.Data['Arn'] = get_caller_arn(event['StackId'])
-        if len(helper.Data['Arn']) < 2:
-            return helper.Data['Arn']
-        return helper.Data['Arn'].split('/')[1]
+        arn = get_caller_arn(event['StackId'])
+        helper.Data['Arn'] = arn
+        if len(arn.split('/')) < 2:
+            return arn
+        return arn.split('/')[1]
     except Exception:
         logger.error("unexpected error", exc_info=True)
         helper.Data['Arn'] = "NotFound"
