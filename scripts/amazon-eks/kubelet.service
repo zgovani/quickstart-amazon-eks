@@ -11,8 +11,8 @@ ExecStart=/usr/bin/kubelet --cloud-provider aws \
     --allow-privileged=true \
     --kubeconfig /var/lib/kubelet/kubeconfig \
     --container-runtime docker \
-    --network-plugin cni $KUBELET_ARGS $KUBELET_EXTRA_ARGS
-
+    --network-plugin cni $KUBELET_ARGS $KUBELET_EXTRA_ARGS \
+    --image-pull-progress-deadline=2m
 Restart=on-failure
 RestartForceExitStatus=SIGPIPE
 RestartSec=5
