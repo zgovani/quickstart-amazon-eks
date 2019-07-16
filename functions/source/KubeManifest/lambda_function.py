@@ -36,7 +36,7 @@ def run_command(command):
         except Exception as e:
             if 'Unable to connect to the server' not in str(e) or retries >= 5:
                 raise
-            logger.debug("{}, retrying in 5 seconds").format(e)
+            logger.debug("{}, retrying in 5 seconds".format(e))
             sleep(5)
             retries += 1
 
