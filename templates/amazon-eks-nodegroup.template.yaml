@@ -636,6 +636,9 @@ Resources:
         - Key: k8s.io/cluster-autoscaler/enabled
           Value: 'true'
           PropagateAtLaunch: true
+        - Key: !Sub 'k8s.io/cluster-autoscaler/${EKSControlPlane}'
+          Value: ''
+          PropagateAtLaunch: true
     CreationPolicy:
       ResourceSignal:
         Count: !Ref NumberOfNodes
