@@ -59,11 +59,15 @@ def delete_handler(event, _):
                 break
         lbs_to_remove = []
         if lbs:
-            lbs = elb.describe_tags(**{lt[2]: lbs})["TagDescriptions"]
-            for tags in lbs:
-                for tag in tags['Tags']:
-                    if tag["Key"] == tag_key and tag['Value'] == "owned":
-                        lbs_to_remove.append(tags[lt[4]])
+            #Split LB list into groups of 'size' items.
+            size = 20
+            lb_groups = (lbs[pos:pos + size] for pos in range(0, len(lbs), size))
+            for lb_group in lb_groups:
+                lb_group = elb.describe_tags(**{lt[2]: lb_group})["TagDescriptions"]
+                for tags in lb_group:
+                    for tag in tags['Tags']:
+                        if tag["Key"] == tag_key and tag['Value'] == "owned":
+                            lbs_to_remove.append(tags[lt[4]])
         if lbs_to_remove:
             for lb in lbs_to_remove:
                 print("removing elb %s" % lb)
