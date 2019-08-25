@@ -37,10 +37,15 @@ def run_command(command):
         logger.debug("Command failed with exit code %s, stderr: %s" % (exc.returncode, exc.output.decode("utf-8")))
         err = Exception(exc.output.decode("utf-8"))
     if err:
-        if "Error: context deadline exceeded" in err:
-            logger.error(f'retying command "{command}" as it failed with error: {err}')
-            return run_command(command)
-        raise err
+        try:
+            if "Error: context deadline exceeded" in err:
+                logger.error(f'retying command "{command}" as it failed with error: {err}')
+                return run_command(command)
+            else:
+                raise err
+        except TypeError:
+            # Not iterable. (Simply raise the error)
+            raise err
     else:
         return output
 
@@ -152,8 +157,12 @@ def helm_init(event):
     repo_name = ''
     if 'Chart' in event['ResourceProperties'].keys():
         repo_name = event['ResourceProperties']['Chart'].split('/')[0]
-    if "PhysicalResourceId" in event.keys():
+
+    if "Name" in event['ResourceProperties'].keys():
+        physical_resource_id = event["ResourceProperties"]["Name"]
+    elif "PhysicalResourceId" in event.keys():
         physical_resource_id = event["PhysicalResourceId"]
+
     if "RepoUrl" in event['ResourceProperties'].keys():
         run_command("helm repo add %s %s --home /tmp/.helm" % (repo_name, event['ResourceProperties']["RepoUrl"]))
     if "Namespace" in event['ResourceProperties'].keys():
@@ -227,9 +236,9 @@ def delete(event, _):
     physical_resource_id = helm_init(event)
     if not re.search(r'^[0-9]{4}/[0-9]{2}/[0-9]{2}/\[\$LATEST\][a-f0-9]{32}$', physical_resource_id):
         try:
-            run_command("helm delete --home /tmp/.helm --purge %s" % event['PhysicalResourceId'])
+            run_command("helm delete --home /tmp/.helm --purge %s" % physical_resource_id)
         except Exception as exc:
-            if 'release: "%s" not found' % event['PhysicalResourceId'] in str(exc):
+            if 'release: "%s" not found' % physical_resource_id in str(exc):
                 logger.warning("release already gone, or never existed")
             elif 'invalid release name' in str(exc):
                 logger.warning("release name invalid, either creation failed, or response not received by "
