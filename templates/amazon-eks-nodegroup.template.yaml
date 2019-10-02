@@ -121,6 +121,10 @@ Parameters:
   VPCID:
     Description: ID of your existing VPC for deployment
     Type: AWS::EC2::VPC::Id
+  CleanupSecurityGroupDependenciesLambdaArn:
+    Description: ARN for CleanupSecurityGroupDependencies lambda function
+    Type: String
+    Default: ""
   NodeInstanceType:
     Default: t3.medium
     AllowedValues:
@@ -280,6 +284,8 @@ Conditions:
     - !Ref NumberOfNodes
     - 1
   UseCustomAmi: !Not [ !Equals [ !Ref CustomAmiId, "" ] ]
+  CleanupSGs:
+    !Not [ !Equals [ !Ref CleanupSecurityGroupDependenciesLambdaArn, "" ] ]
 Mappings:
   K8sVersionMap:
     "1.12":
@@ -555,6 +561,12 @@ Mappings:
       SLES15EKS112: ami-0f1e3b3fb0fec0361
       SLES15EKS112GPU: ami-0f1e3b3fb0fec0361
 Resources:
+  CleanupSecurityGroupDependencies:
+    Condition: CleanupSGs
+    Type: Custom::Cleanup
+    Properties:
+      ServiceToken: !Ref CleanupSecurityGroupDependenciesLambdaArn
+      SecurityGroups: [!Ref NodeSecurityGroup]
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -618,6 +630,8 @@ Resources:
       ToPort: 443
       FromPort: 443
   NodeGroup:
+    Metadata:
+      DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       DesiredCapacity: !Ref NumberOfNodes
