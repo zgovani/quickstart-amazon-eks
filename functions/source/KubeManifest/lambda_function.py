@@ -210,6 +210,8 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
     for arn in arns:
         if arn != 'NotFound':
             iam_type = arn.split(':')[5].split("/")[0]
+            if iam_type == 'root':
+                iam_type = 'user'
             entry = {
                 "%sarn" % iam_type: arn,
                 "username": username if username else arn,
