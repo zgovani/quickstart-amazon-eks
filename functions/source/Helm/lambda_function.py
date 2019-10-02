@@ -270,7 +270,7 @@ def poll_create_update(event, _):
                 msg = "%s/%s" % (k8s_type, k8s_name)
                 unready.append(msg)
             if status['phase'] != "Succeeded":
-                for s in status["containerStatuses"]:
+                for s in status.get("containerStatuses", [{"ready": False}]):
                     if not s["ready"]:
                         msg = "%s/%s" % (k8s_type, k8s_name)
                         unready.append(msg)
