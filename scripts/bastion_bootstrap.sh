@@ -242,12 +242,16 @@ EOF
     echo "Defaults env_keep += \"SSH_CLIENT\"" >> /etc/sudoers
 
     if [[ "${release}" == "Ubuntu" ]]; then
+        user="ubuntu"
         user_group="ubuntu"
     elif [[ "${release}" == "CentOS" ]]; then
+        user="centos"
         user_group="centos"
     elif [[ "${release}" == "SLES" ]]; then
+        user="ec2-user"
         user_group="users"
     else
+        user="ec2-user"
         user_group="ec2-user"
     fi
 
@@ -267,8 +271,8 @@ EOF
     fi
 
     if [[ "${release}" == "SLES" ]]; then
-        zypper install --non-interactive bash-completion
-        echo "0 0 * * * zypper patch --non-interactive" > ~/mycron
+        zypper install -y bash-completion
+        echo "0 0 * * * zypper patch -y" > ~/mycron
     elif [[ "${release}" == "Ubuntu" ]]; then
         apt-get install -y unattended-upgrades
         apt-get install -y bash-completion
@@ -389,8 +393,8 @@ function prevent_process_snooping() {
 }
 
 function setup_kubeconfig() {
-    mkdir -p /home/${user_group}/.kube
-    cat > /home/${user_group}/.kube/config <<EOF
+    mkdir -p /home/${user}/.kube
+    cat > /home/${user}/.kube/config <<EOF
 apiVersion: v1
 clusters:
 - cluster:
@@ -418,7 +422,7 @@ users:
         - "-r"
         - "${K8S_ROLE_ARN}"
 EOF
-    chown -R ${user_group} /home/${user_group}/.kube/
+    chown -R ${user}:${user_group} /home/${user}/.kube/
 }
 
 function install_kubernetes_client_tools() {
@@ -438,7 +442,7 @@ function install_kubernetes_client_tools() {
     mv ./linux-amd64/tiller /usr/local/bin/
     rm -rf ./linux-amd64/
     touch /var/log/tiller.log
-    chown ${user_group} /var/log/tiller.log
+    chown ${user}:${user_group} /var/log/tiller.log
     cat > /usr/local/bin/helm <<"EOF"
 #!/bin/bash
 /usr/local/bin/tiller -listen 127.0.0.1:44134 -alsologtostderr -storage secret &>> /var/log/tiller.log &
@@ -451,7 +455,7 @@ kill %1
 exit ${EXIT_CODE}
 EOF
     chmod +x /usr/local/bin/helm
-    su ${user_group} -c "/usr/local/bin/helm init --client-only"
+    su ${user} -c "/usr/local/bin/helm init --client-only"
 }
 
 ##################################### End Function Definitions
