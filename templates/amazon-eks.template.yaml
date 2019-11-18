@@ -279,6 +279,7 @@ Resources:
         BootstrapArguments: !Ref BootstrapArguments
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
   BastionSShToNodes:
     Condition: EnableBastion
     Type: "AWS::EC2::SecurityGroupIngress"
@@ -310,6 +311,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         KubeConfigBucket: !Ref KubeConfigBucket
         CreateBastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
+        BastionIAMRoleName: !If [CustomBastionRole, !Ref BastionIAMRoleName , ''] 
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -467,3 +469,7 @@ Outputs:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
   CleanupSecurityGroupDependenciesLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
+  NodeAutoScalingGroup:
+    Value: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
+  ControlPlaneProvisionRoleArn:
+    Value: !GetAtt IamStack.Outputs.ControlPlaneProvisionRoleArn

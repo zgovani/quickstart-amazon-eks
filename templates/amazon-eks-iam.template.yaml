@@ -36,9 +36,13 @@ Parameters:
     Type: String
     Default: "Enabled"
     AllowedValues: ["Enabled", "Disabled"]
+  BastionIAMRoleName:
+    Type: String
+    Default: ""
 Conditions:
   CreateDeleteBucketContentsRole: !Equals [!Ref 'DeleteLambdaZipsBucketContents', "True"]
   EnableBastionRole: !Equals [!Ref CreateBastionRole, "Enabled"]
+  CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
 Resources:
   DeleteBucketContentsRole:
     Condition: CreateDeleteBucketContentsRole
@@ -103,6 +107,13 @@ Resources:
             - Effect: Allow
               Principal:
                 AWS: !GetAtt BastionRole.Arn
+              Action: sts:AssumeRole
+            - !Ref AWS::NoValue
+          - !If
+            - CustomBastionRole
+            - Effect: Allow
+              Principal:
+                AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${BastionIAMRoleName}'
               Action: sts:AssumeRole
             - !Ref AWS::NoValue
           - Effect: Allow
