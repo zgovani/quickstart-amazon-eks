@@ -311,6 +311,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         KubeConfigBucket: !Ref KubeConfigBucket
         CreateBastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
+        BastionIAMRoleName: !If [CustomBastionRole, !Ref BastionIAMRoleName , ''] 
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
@@ -468,3 +469,5 @@ Outputs:
     Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
   CleanupSecurityGroupDependenciesLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
+  NodeAutoScalingGroup:
+    Value: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
