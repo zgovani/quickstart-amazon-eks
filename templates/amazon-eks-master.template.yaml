@@ -33,6 +33,7 @@ Metadata:
         Parameters:
           - NodeInstanceType
           - NumberOfNodes
+          - MaxNumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
           - AdditionalEKSAdminArns
@@ -80,6 +81,8 @@ Metadata:
         default: Nodes instance type
       NumberOfNodes:
         default: Number of nodes
+      MaxNumberOfNodes:
+        default: Maximum number of nodes  
       NodeGroupName:
         default: Node group name
       NodeVolumeSize:
@@ -274,6 +277,10 @@ Parameters:
     Default: 3
     Description: The number of Amazon EKS node instances. The default is one for each of the three Availability Zones.
     Type: Number
+  MaxNumberOfNodes:
+    Default: 3
+    Description: The maximum number of Amazon EKS node instances. The default is three node.
+    Type: Number  
   NodeGroupName:
     Default: Default
     Description: The name for EKS node group.
@@ -368,7 +375,7 @@ Resources:
         PrivateSubnet2ID: !GetAtt VPCStack.Outputs.PrivateSubnet2AID
         PrivateSubnet3ID: !GetAtt VPCStack.Outputs.PrivateSubnet3AID
         NumberOfNodes: !Ref NumberOfNodes
-        MaxNumberOfNodes: !Ref NumberOfNodes
+        MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
