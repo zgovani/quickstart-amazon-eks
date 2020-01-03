@@ -82,7 +82,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt LambdaCleanUpFunctionRole.Arn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
@@ -124,7 +124,7 @@ Resources:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
       Role: !GetAtt DeleteBucketContentsRole.Arn
-      Runtime: python2.7
+      Runtime: python3.7
       Timeout: 900
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
@@ -134,7 +134,7 @@ Resources:
     Properties:
       Description: Copies objects from a source S3 bucket to a destination
       Handler: index.handler
-      Runtime: python2.7
+      Runtime: python3.7
       Role: !GetAtt CopyZipsRole.Arn
       Timeout: 900
       Code:
