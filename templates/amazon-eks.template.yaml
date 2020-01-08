@@ -139,7 +139,7 @@ Parameters:
     Type: "AWS::EC2::Subnet::Id"
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.14", "1.13", "1.12", "1.11" ]
+    AllowedValues: [ "1.14", "1.13", "1.12" ]
     Default: "1.14"
   ProvisionClusterAutoScaler:
     Type: String
@@ -311,7 +311,7 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         KubeConfigBucket: !Ref KubeConfigBucket
         CreateBastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
-        BastionIAMRoleName: !If [CustomBastionRole, !Ref BastionIAMRoleName , ''] 
+        BastionIAMRoleName: !If [CustomBastionRole, !Ref BastionIAMRoleName , '']
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
