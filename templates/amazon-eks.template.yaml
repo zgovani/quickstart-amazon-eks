@@ -145,6 +145,10 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
+  ProvisionPrometheus:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
   BootstrapArguments:
     Type: String
     Default: ""
@@ -205,6 +209,7 @@ Conditions:
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
   AdditionalVars: !Not [!Equals [!Ref 'BastionVariables', '']]
   EnableClusterAutoScaler: !Equals [!Ref 'ProvisionClusterAutoScaler', 'Enabled']
+  EnablePrometheus: !Equals [!Ref 'ProvisionPrometheus', 'Enabled']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
 Resources:
   BastionEksPermissions:
@@ -431,6 +436,16 @@ Resources:
       }
   KubeConfigBucket:
     Type: "AWS::S3::Bucket"
+  PrometheusStack:
+    Condition: EnablePrometheus
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-prometheus.template.yaml'
+      Parameters:
+        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
+        KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
+        KubeConfigKmsContext: !Ref KubeConfigKmsContext
+        EksClusterName: !GetAtt EKSControlPlane.EKSName
 Outputs:
   KubeConfigPath:
     Value: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"

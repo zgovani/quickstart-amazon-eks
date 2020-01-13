@@ -46,6 +46,7 @@ Metadata:
           - EfsPerformanceMode
           - EfsThroughputMode
           - EfsProvisionedThroughputInMibps
+          - Prometheus
       - Label:
           default: AWS Quick Start configuration
         Parameters:
@@ -103,6 +104,8 @@ Metadata:
         default: EFS throughput mode
       EfsProvisionedThroughputInMibps:
         default: EFS provisioned throughput in Mibps
+      Prometheus:
+        default: Monitoring with Prometheus
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -323,6 +326,11 @@ Parameters:
     MinValue: 0
     Default: 0
     Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
+  Prometheus:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Choose Enabled to enable Monitoring with Prometheus
 Rules:
   EKSSupport:
     Assertions:
@@ -389,6 +397,7 @@ Resources:
         EfsPerformanceMode: !Ref EfsPerformanceMode
         EfsThroughputMode: !Ref EfsThroughputMode
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
+        ProvisionPrometheus: !Ref Prometheus
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath
