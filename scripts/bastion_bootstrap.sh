@@ -434,7 +434,7 @@ function install_kubernetes_client_tools() {
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin/
     echo "source <(kubectl completion bash)" >> ~/.bashrc
-    retry_command 20 curl --retry 5 -o helm.tar.gz https://storage.googleapis.com/kubernetes-helm/helm-v2.12.2-linux-amd64.tar.gz
+    retry_command 20 curl --retry 5 -o helm.tar.gz https://get.helm.sh/helm-v2.16.1-linux-amd64.tar.gz
     tar -xvf helm.tar.gz
     chmod +x ./linux-amd64/helm
     chmod +x ./linux-amd64/tiller

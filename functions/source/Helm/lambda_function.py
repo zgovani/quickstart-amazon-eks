@@ -10,6 +10,7 @@ import logging
 import string
 from time import sleep
 from datetime import datetime
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -174,10 +175,16 @@ def helm_init(event):
 
 
 def build_flags(properties, request_type="Create"):
-    val_file = ""
+    internal_values = ""
     if "ValueYaml" in properties:
-        write_values(properties["ValueYaml"], '/tmp/values.yaml')
-        val_file = "-f /tmp/values.yaml"
+        write_values(properties["ValueYaml"], '/tmp/internalValues.yaml')
+        internal_values = "-f /tmp/internalValues.yaml"
+    custom_values = ""
+    if "CustomValueYaml" in properties:
+        #TODO validation & error handling
+        custom_value_yaml = requests.get(properties["CustomValueYaml"]).text
+        write_values(custom_value_yaml, '/tmp/customValues.yaml')
+        custom_values = "-f /tmp/customValues.yaml"
     set_vals = ""
     if "Values" in properties:
         values = properties['Values']
@@ -194,7 +201,7 @@ def build_flags(properties, request_type="Create"):
         f = open("/tmp/chart.tgz", "wb")
         f.write(chart)
         f.close()
-    return "%s %s %s %s %s" % (properties['Chart'], val_file, set_vals, version, name)
+    return "%s %s %s %s %s %s" % (properties['Chart'], internal_values, custom_values, set_vals, version, name)
 
 
 def _trim_event_for_poll(event):
