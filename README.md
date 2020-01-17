@@ -1,7 +1,7 @@
 # quickstart-amazon-eks
 ## Modular and Scalable Amazon EKS Architecture
 
-This Quick Start helps you to deploy a Kubernetes cluster that uses Amazon Elastic Container Service for Kubernetes (Amazon EKS), enabling you to deploy, manage, and scale containerized applications running on Kubernetes on the Amazon Web Services (AWS) Cloud.
+This Quick Start helps you to deploy a Kubernetes cluster that uses Amazon Elastic Kubernetes Service (Amazon EKS), enabling you to deploy, manage, and scale containerized applications running on Kubernetes on the Amazon Web Services (AWS) Cloud.
 
 Amazon EKS runs the Kubernetes management infrastructure for you across multiple AWS Availability Zones to eliminate a single point of failure. Amazon EKS is also certified Kubernetes conformant, and this reference deployment provides custom resources that enable you to deploy and manage your Kubernetes applications using AWS CloudFormation by declaring Kubernetes manifests or Helm charts directly in AWS CloudFormation templates.
 
