@@ -29,8 +29,8 @@ tests:
     template_file: amazon-eks-master.template.yaml
     regions:
       - eu-central-1
-  quickstart-amazon-eks-prometheus:
-    parameter_input: amazon-eks-prometheus.json
+  quickstart-amazon-eks-monitoring-prom-graf:
+    parameter_input: amazon-eks-monitoring-prom-graf.json
     template_file: amazon-eks-master.template.yaml
     regions:
       - ap-southeast-2
