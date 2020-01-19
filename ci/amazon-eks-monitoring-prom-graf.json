@@ -20,7 +20,7 @@
     "ParameterValue": ""
   },
   {
-    "ParameterKey": "Prometheus",
-    "ParameterValue": "Enabled"
+    "ParameterKey": "MonitoringStack",
+    "ParameterValue": "Prometheus + Grafana"
   }
 ]
