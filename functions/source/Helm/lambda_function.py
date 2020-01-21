@@ -10,6 +10,7 @@ import logging
 import string
 from time import sleep
 from datetime import datetime
+import requests
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +19,8 @@ helper = CfnResource(json_logging=True, log_level='DEBUG')
 try:
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
+    valid_url_schemes = re.compile(r'^(?:http|https|s3)://')
+    s3_scheme = re.compile(r'^s3://.+/.+')
 except Exception as e:
     helper.init_failure(e)
 
@@ -173,11 +176,43 @@ def helm_init(event):
     return physical_resource_id
 
 
+def http_get(url):
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Failed to fetch CustomValueYaml url {url}: {e}")
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to fetch CustomValueYaml url {url}: [{response.status_code}] "
+            f"{response.reason}"
+        )
+    return response.text
+
+
+def s3_get(url):
+    try:
+        return str(s3_client.get_object(
+            Bucket=url.split('/')[2], Key="/".join(url.split('/')[3:])
+        )['Body'].read())
+    except Exception as e:
+       raise RuntimeError(f"Failed to fetch CustomValueYaml {url} from S3. {e}")
+
+
 def build_flags(properties, request_type="Create"):
-    val_file = ""
+    internal_values = ""
     if "ValueYaml" in properties:
-        write_values(properties["ValueYaml"], '/tmp/values.yaml')
-        val_file = "-f /tmp/values.yaml"
+        write_values(properties["ValueYaml"], '/tmp/internalValues.yaml')
+        internal_values = "-f /tmp/internalValues.yaml"
+    custom_values = ""
+    if "CustomValueYaml" in properties:
+        if not re.match(valid_url_schemes, properties["CustomValueYaml"]):
+            raise ValueError()
+        if re.match(s3_scheme, properties["CustomValueYaml"]):
+            custom_value_yaml = s3_get(properties["CustomValueYaml"])
+        else:
+            custom_value_yaml = http_get(properties["CustomValueYaml"])
+        write_values(custom_value_yaml, '/tmp/customValues.yaml')
+        custom_values = "-f /tmp/customValues.yaml"
     set_vals = ""
     if "Values" in properties:
         values = properties['Values']
@@ -194,7 +229,7 @@ def build_flags(properties, request_type="Create"):
         f = open("/tmp/chart.tgz", "wb")
         f.write(chart)
         f.close()
-    return "%s %s %s %s %s" % (properties['Chart'], val_file, set_vals, version, name)
+    return "%s %s %s %s %s %s" % (properties['Chart'], internal_values, custom_values, set_vals, version, name)
 
 
 def _trim_event_for_poll(event):
