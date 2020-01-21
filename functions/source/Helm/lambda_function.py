@@ -19,7 +19,8 @@ helper = CfnResource(json_logging=True, log_level='DEBUG')
 try:
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
-    valid_url_schemes = re.compile(r'^(?:http|https)://')
+    valid_url_schemes = re.compile(r'^(?:http|https|s3)://')
+    s3_scheme = re.compile(r'^s3://.+/.+')
 except Exception as e:
     helper.init_failure(e)
 
@@ -188,6 +189,15 @@ def http_get(url):
     return response.text
 
 
+def s3_get(url):
+    try:
+        return str(s3_client.get_object(
+            Bucket=url.split('/')[2], Key="/".join(url.split('/')[3:])
+        )['Body'].read())
+    except Exception as e:
+       raise RuntimeError(f"Failed to fetch CustomValueYaml {url} from S3. {e}")
+
+
 def build_flags(properties, request_type="Create"):
     internal_values = ""
     if "ValueYaml" in properties:
@@ -197,7 +207,10 @@ def build_flags(properties, request_type="Create"):
     if "CustomValueYaml" in properties:
         if not re.match(valid_url_schemes, properties["CustomValueYaml"]):
             raise ValueError()
-        custom_value_yaml = http_get(properties["CustomValueYaml"])
+        if re.match(s3_scheme, properties["CustomValueYaml"]):
+            custom_value_yaml = s3_get(properties["CustomValueYaml"])
+        else:
+            custom_value_yaml = http_get(properties["CustomValueYaml"])
         write_values(custom_value_yaml, '/tmp/customValues.yaml')
         custom_values = "-f /tmp/customValues.yaml"
     set_vals = ""
