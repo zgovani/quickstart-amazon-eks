@@ -349,9 +349,6 @@ Outputs:
   BastionIP:
     Value: !GetAtt EKSStack.Outputs.BastionIP
   BastionSecurityGroup:
-    Value: !If
-      - EnableBastion
-      - !GetAtt BastionStack.Outputs.BastionSecurityGroupID
-      - ""
+    Value: !GetAtt EKSStack.Outputs.BastionSecurityGroup
   NodeGroupSecurityGroup:
-    Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
+    Value: !GetAtt EKSStack.Outputs.EKSNodeSecurityGroup
