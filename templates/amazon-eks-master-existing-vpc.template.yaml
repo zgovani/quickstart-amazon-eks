@@ -342,31 +342,16 @@ Outputs:
     Value: !GetAtt EKSStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
-  BastionIP:
-    Value: !GetAtt EKSStack.Outputs.BastionIP
+  KubeGetLambdaArn:
+    Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName
+  BastionIP:
+    Value: !GetAtt EKSStack.Outputs.BastionIP
   BastionSecurityGroup:
     Value: !If
       - EnableBastion
       - !GetAtt BastionStack.Outputs.BastionSecurityGroupID
       - ""
-  BastionAutoScalingGroup:
-    Value: !If
-      - EnableBastion
-      - !GetAtt BastionStack.Outputs.BastionAutoScalingGroup
-      - ""
-  NodeInstanceProfile:
-    Value: !GetAtt IamStack.Outputs.NodeInstanceProfile
-  NodeInstanceRoleName:
-    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName
-  ControlPlaneSecurityGroup:
-    Value: !GetAtt ControlPlaneSecurityGroup.GroupId
   NodeGroupSecurityGroup:
     Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
-  NodeInstanceRoleArn:
-    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
-  CleanupSecurityGroupDependenciesLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
-  NodeAutoScalingGroup:
-    Value: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
