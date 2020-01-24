@@ -410,3 +410,27 @@ Outputs:
     Value: !GetAtt EKSStack.Outputs.BastionIP
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName
+  BastionSecurityGroup:
+    Value: !If
+      - EnableBastion
+      - !GetAtt BastionStack.Outputs.BastionSecurityGroupID
+      - ""
+  BastionAutoScalingGroup:
+    Value: !If
+      - EnableBastion
+      - !GetAtt BastionStack.Outputs.BastionAutoScalingGroup
+      - ""
+  NodeInstanceProfile:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceProfile
+  NodeInstanceRoleName:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleName
+  ControlPlaneSecurityGroup:
+    Value: !GetAtt ControlPlaneSecurityGroup.GroupId
+  NodeGroupSecurityGroup:
+    Value: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
+  NodeInstanceRoleArn:
+    Value: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
+  CleanupSecurityGroupDependenciesLambdaArn:
+    Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
+  NodeAutoScalingGroup:
+    Value: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
