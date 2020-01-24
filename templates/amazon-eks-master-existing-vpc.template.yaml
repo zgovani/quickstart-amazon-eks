@@ -343,7 +343,7 @@ Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
   KubeGetLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
+    Value: !GetAtt EKSStack.Outputs.KubeGetLambdaArn
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName
   BastionIP:
