@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Deploys the grafana helm chart into an existing kubernetes cluster"
+Description: "Deploys the grafana helm chart into an existing kubernetes cluster (qs-1qde65hno)"
 Parameters:
   HelmLambdaArn:
     Type: String
