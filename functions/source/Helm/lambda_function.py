@@ -200,11 +200,11 @@ def s3_get(url):
 
 def build_flags(properties, request_type="Create"):
     internal_values = ""
-    if "ValueYaml" in properties:
+    if properties.get("ValueYaml"):
         write_values(properties["ValueYaml"], '/tmp/internalValues.yaml')
         internal_values = "-f /tmp/internalValues.yaml"
     custom_values = ""
-    if "CustomValueYaml" in properties:
+    if properties.get("CustomValueYaml"):
         if not re.match(valid_url_schemes, properties["CustomValueYaml"]):
             raise ValueError()
         if re.match(s3_scheme, properties["CustomValueYaml"]):
@@ -214,16 +214,16 @@ def build_flags(properties, request_type="Create"):
         write_values(custom_value_yaml, '/tmp/customValues.yaml')
         custom_values = "-f /tmp/customValues.yaml"
     set_vals = ""
-    if "Values" in properties:
+    if properties.get("Values"):
         values = properties['Values']
         set_vals = " ".join(["--set %s=%s" % (k, values[k]) for k in values.keys()])
     version = ""
-    if "Version" in properties:
+    if properties.get("Version"):
         version = "--version %s" % properties['Version']
     name = ""
-    if "Name" in properties and request_type != "Update":
+    if properties.get("Name") and request_type != "Update":
         name = "--name %s" % properties['Name']
-    if "ChartBucket" in properties and "ChartKey" in properties:
+    if properties.get("ChartBucket") and properties.get("ChartKey"):
         properties['Chart'] = '/tmp/chart.tgz'
         chart = s3_client.get_object(Bucket=properties["ChartBucket"], Key=properties["ChartKey"])['Body'].read()
         f = open("/tmp/chart.tgz", "wb")
