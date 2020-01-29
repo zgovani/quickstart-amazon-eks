@@ -277,10 +277,8 @@ EOF
         apt-get install -y unattended-upgrades
         apt-get install -y bash-completion
         echo "0 0 * * * unattended-upgrades -d" > ~/mycron
-    elif [[ "${release}" == "CentOS" ]]; then
-        yum install -y bash-completion --enablerepo=epel
-        echo "0 0 * * * yum -y update --security" > ~/mycron
     else
+        yum install -y bash-completion --enablerepo=epel
         echo "0 0 * * * yum -y update --security" > ~/mycron
     fi
 
@@ -422,6 +420,7 @@ users:
         - "-r"
         - "${K8S_ROLE_ARN}"
 EOF
+    cp /home/${user}/.kube/ /root/.kube/
     chown -R ${user}:${user_group} /home/${user}/.kube/
 }
 
@@ -433,7 +432,12 @@ function install_kubernetes_client_tools() {
     retry_command 20 curl --retry 5 -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.14.6/2019-08-22/bin/linux/amd64/kubectl
     chmod +x ./kubectl
     mv ./kubectl /usr/local/bin/
-    echo "source <(kubectl completion bash)" >> ~/.bashrc
+    cat > /etc//profile.d/kubectl.sh <<EOF
+#!/bin/bash
+if [[ ":$PATH:" != *":/usr/local/bin:"* ]]; then     PATH="$PATH:/usr/local/bin";   fi
+source <(kubectl completion bash)
+EOF
+    chmod +x /etc//profile.d/kubectl.sh
     retry_command 20 curl --retry 5 -o helm.tar.gz https://get.helm.sh/helm-v2.16.1-linux-amd64.tar.gz
     tar -xvf helm.tar.gz
     chmod +x ./linux-amd64/helm
