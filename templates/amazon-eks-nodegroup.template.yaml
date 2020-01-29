@@ -113,11 +113,13 @@ Parameters:
   PrivateSubnet2ID:
     Description: ID of private subnet 2 in Availability Zone 2 for the Workload (e.g.,
       subnet-b1f432cd)
-    Type: AWS::EC2::Subnet::Id
+    Type: String
+    Default: ""
   PrivateSubnet3ID:
     Description: ID of private subnet 3 in Availability Zone 3 for the Workload (e.g.,
       subnet-b1f4a2cd)
-    Type: AWS::EC2::Subnet::Id
+    Type: String
+    Default: ""
   VPCID:
     Description: ID of your existing VPC for deployment
     Type: AWS::EC2::VPC::Id
@@ -270,6 +272,10 @@ Parameters:
     Type: String
     Default: ""
 Conditions:
+  3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
+  2AZDeployment: !Or
+    - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
+    - !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   MaxNodes: !Not [ !Equals [ !Ref MaxNumberOfNodes, "" ] ]
   AmznOS: !Equals
     - !Ref NodeAMIOS
@@ -456,6 +462,19 @@ Mappings:
       SLES15EKS113GPU: ami-0c4245381c67efb39
       SLES15EKS112: ami-0c4245381c67efb39
       SLES15EKS112GPU: ami-0c4245381c67efb39
+    ca-central-1:
+      AMZNEKS114: ami-01cf8b905999c46ba
+      AMZNEKS114GPU: ami-0d4fb603a78cd1f12
+      AMZNEKS113: ami-0a820bd03c37a1649
+      AMZNEKS113GPU: ami-03441f7cfced50580
+      AMZNEKS112: ami-0fbe91543aab8b213
+      AMZNEKS112GPU: ami-026446eaceb350105
+      SLES15EKS114: ami-0c97d9b588207dad6
+      SLES15EKS114GPU: ami-0c97d9b588207dad6
+      SLES15EKS113: ami-0c97d9b588207dad6
+      SLES15EKS113GPU: ami-0c97d9b588207dad6
+      SLES15EKS112: ami-0c97d9b588207dad6
+      SLES15EKS112GPU: ami-0c97d9b588207dad6
     eu-central-1:
       AMZNEKS114: ami-07034b303e1ffc843
       AMZNEKS114GPU: ami-08b45c59715f94f5f
@@ -651,7 +670,13 @@ Resources:
       LaunchConfigurationName: !Ref NodeLaunchConfig
       MinSize: !Ref NumberOfNodes
       MaxSize: !If [ MaxNodes, !Ref MaxNumberOfNodes, !Ref NumberOfNodes ]
-      VPCZoneIdentifier: [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]
+      VPCZoneIdentifier: !If
+        - 3AZDeployment
+        - [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]
+        - !If
+          - 2AZDeployment
+          - [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]
+          - [ !Ref PrivateSubnet1ID ]
       TargetGroupARNs: !If [ DisableTargetGroups, !Ref "AWS::NoValue", !Ref TargetGroupARNs ]
       Tags:
         - Key: Name

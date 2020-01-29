@@ -128,15 +128,19 @@ Parameters:
   PublicSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
   PublicSubnet2ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
+    Default: ""
   PublicSubnet3ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
+    Default: ""
   PrivateSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
   PrivateSubnet2ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
+    Default: ""
   PrivateSubnet3ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
+    Default: ""
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.14", "1.13", "1.12" ]
@@ -203,6 +207,10 @@ Parameters:
     MinValue: 0
     Default: 0
 Conditions:
+  3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
+  2AZDeployment: !Or
+    - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
+    - !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   CreateLambdaZipsBucket: !Equals [!Ref 'LambdaZipsBucketName', '']
   DefaultBastionBootstrap: !Equals [!Ref 'BastionBootstrapScript', '']
   EnableBastion: !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
@@ -237,7 +245,7 @@ Resources:
       Parameters:
         VPCID: !Ref VPCID
         PublicSubnet1ID: !Ref PublicSubnet1ID
-        PublicSubnet2ID: !Ref PublicSubnet2ID
+        PublicSubnet2ID: !If [2AZDeployment, !Ref PublicSubnet2ID, !Ref "AWS::NoValue"]
         KeyPairName: !Ref KeyPairName
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
@@ -268,8 +276,8 @@ Resources:
         KeyPairName: !Ref 'KeyPairName'
         NodeAMIOS: !Ref NodeAMIOS
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
-        PrivateSubnet2ID: !Ref PrivateSubnet2ID
-        PrivateSubnet3ID: !Ref PrivateSubnet3ID
+        PrivateSubnet2ID: !If [2AZDeployment, !Ref PrivateSubnet2ID, !Ref "AWS::NoValue" ]
+        PrivateSubnet3ID: !If [3AZDeployment, !Ref PrivateSubnet3ID, !Ref "AWS::NoValue" ]
         VPCID: !Ref VPCID
         NodeInstanceType: !Ref NodeInstanceType
         NumberOfNodes: !Ref NumberOfNodes
@@ -328,7 +336,13 @@ Resources:
         CopyZipsRoleArn: !GetAtt IamStack.Outputs.CopyZipsRoleArn
         EKSProvisionRoleArn: !GetAtt IamStack.Outputs.ControlPlaneProvisionRoleArn
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
-        EKSSubnetIds: !Sub "${PrivateSubnet1ID},${PrivateSubnet2ID},${PrivateSubnet3ID}"
+        EKSSubnetIds: !If
+          - 3AZDeployment
+          - !Sub "${PrivateSubnet1ID},${PrivateSubnet2ID},${PrivateSubnet3ID}"
+          - !If
+            - 2AZDeployment
+            - !Sub "${PrivateSubnet1ID},${PrivateSubnet2ID}"
+            - !Sub "${PrivateSubnet1ID}"
         DeleteBucketContentsRoleArn: !GetAtt IamStack.Outputs.DeleteBucketContentsRoleArn
         QuickStartStackMakerRoleArn: !GetAtt IamStack.Outputs.QuickStartStackMakerRoleArn
         DeleteLambdaZipsBucketContents: !If [ CreateLambdaZipsBucket, "True", "False" ]
@@ -361,8 +375,8 @@ Resources:
         KubeConfigKmsContext: !Ref KubeConfigKmsContext
         NodeGroupSecurityGroup: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
-        PrivateSubnet2ID: !Ref PrivateSubnet2ID
-        PrivateSubnet3ID: !Ref PrivateSubnet3ID
+        PrivateSubnet2ID: !If [2AZDeployment, !Ref PrivateSubnet2ID, !Ref "AWS::NoValue" ]
+        PrivateSubnet3ID: !If [3AZDeployment, !Ref PrivateSubnet3ID, !Ref "AWS::NoValue" ]
         PerformanceMode: !Ref EfsPerformanceMode
         ProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ThroughputMode: !Ref EfsThroughputMode
@@ -391,7 +405,13 @@ Resources:
       ParentStackId: !Ref AWS::StackId
       CfnParameters:
         SecurityGroupIds: !Ref ControlPlaneSecurityGroup
-        SubnetIds: !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID, !Ref PublicSubnet3ID ]]
+        SubnetIds: !If
+          - 3AZDeployment
+          - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID, !Ref PublicSubnet3ID ]]
+          - !If
+            - 2AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID ]]
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PublicSubnet1ID ]]
         RoleArn: !GetAtt IamStack.Outputs.ControlPlaneRoleArn
         NodeInstanceRoleArn: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn

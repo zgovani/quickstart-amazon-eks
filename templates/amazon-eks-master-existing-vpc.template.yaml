@@ -246,20 +246,24 @@ Parameters:
     Type: "AWS::EC2::Subnet::Id"
     Description: The ID of the public subnet in Availability Zone 1 in your existing VPC (e.g., subnet-a0246dcd)
   PublicSubnet2ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
     Description: The ID of the public subnet in Availability Zone 2 in your existing VPC (e.g., subnet-b1236eea)
+    Default: ""
   PublicSubnet3ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
     Description: The ID of the public subnet in Availability Zone 3 in your existing VPC (e.g., subnet-c3456aba)
+    Default: ""
   PrivateSubnet1ID:
     Type: "AWS::EC2::Subnet::Id"
     Description: The ID of the private subnet in Availability Zone 1 in your existing VPC (e.g., subnet-fe9a8b32)
   PrivateSubnet2ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
     Description: The ID of the private subnet in Availability Zone 2 in your existing VPC (e.g., subnet-be8b01ea)
+    Default: ""
   PrivateSubnet3ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
     Description: The ID of the private subnet in Availability Zone 3 in your existing VPC (e.g., subnet-abd39039)
+    Default: ""
   ClusterAutoScaler:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
@@ -304,6 +308,7 @@ Rules:
              - ap-northeast-1
              - ap-northeast-2
              - ap-south-1
+             - ca-central-1
           - !Ref 'AWS::Region'
 Resources:
   EKSStack:
