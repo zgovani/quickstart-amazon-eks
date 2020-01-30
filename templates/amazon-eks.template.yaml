@@ -389,7 +389,7 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !GetAtt 'FunctionStack.Outputs.DeleteBucketContentsLambdaArn'
-      OutputBucket: !Ref 'LambdaZipsBucket'
+      Bucket: !Ref 'LambdaZipsBucket'
   ControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
