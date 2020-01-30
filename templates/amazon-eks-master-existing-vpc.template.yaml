@@ -356,4 +356,4 @@ Outputs:
   BastionSecurityGroup:
     Value: !GetAtt EKSStack.Outputs.BastionSecurityGroup
   NodeGroupSecurityGroup:
-    Value: !GetAtt EKSStack.Outputs.EKSNodeSecurityGroup
+    Value: !GetAtt EKSStack.Outputs.NodeGroupSecurityGroup
