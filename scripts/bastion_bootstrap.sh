@@ -420,7 +420,7 @@ users:
         - "-r"
         - "${K8S_ROLE_ARN}"
 EOF
-    cp /home/${user}/.kube/ /root/.kube/
+    cp -r /home/${user}/.kube/ /root/.kube/
     chown -R ${user}:${user_group} /home/${user}/.kube/
 }
 
