@@ -16,6 +16,7 @@ helper = CfnResource(json_logging=True, log_level='DEBUG')
 try:
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
+    ec2_client = boto3.client('ec2')
 except Exception as init_exception:
     helper.init_failure(init_exception)
 
@@ -232,6 +233,42 @@ def aws_auth_configmap(arns, groups, username=None, delete=False):
     logger.debug(outp)
 
 
+def enable_proxy(proxy_host, vpc_id):
+    configmap = {
+            "apiVersion": "v1",
+            "kind": "ConfigMap",
+            "metadata": {
+                "name": "proxy-environment-variables",
+                "namespace": "kube-system"
+            },
+            "data": {
+                "HTTP_PROXY": proxy_host,
+                "HTTPS_PROXY": proxy_host,
+                "NO_PROXY": "localhost,127.0.0.1,169.254.169.254,.internal"
+            }
+        }
+    cluster_ip = run_command(
+        "kubectl get service/kubernetes -o jsonpath='{.spec.clusterIP}'"
+    )
+    cluster_cidr = ".".join(cluster_ip.split(".")[:3]) + ".0/16"
+    vpc_cidr = ec2_client.describe_vpcs(VpcIds=[vpc_id])['Vpcs'][0]['CidrBlock']
+    configmap["data"]["NO_PROXY"] += f"{vpc_cidr},{cluster_cidr}"
+    write_manifest(configmap, '/tmp/proxy.json')
+    run_command("kubectl apply -f /tmp/proxy.json")
+    patch_cmd = (
+        """kubectl patch -n kube-system -p '{ "spec": {"template": { "spec": { """
+        """"containers": [ { "name": "%s", "envFrom": [ { "configMapRef": {"name": """
+        """"proxy-environment-variables"} } ] } ] } } } }' daemonset %s"""
+    )
+    setenv_cmd = (
+        """kubectl set env daemonset/%s --namespace=kube-system """
+        """--from=configmap/proxy-environment-variables --containers='*'"""
+    )
+    for pod in ["aws-node", "kube-proxy"]:
+        logger.debug(run_command(patch_cmd % (pod, pod)))
+        logger.debug(run_command(setenv_cmd % pod))
+
+
 def handler_init(event):
     logger.debug('Received event: %s' % json.dumps(event, default=json_serial))
 
@@ -241,6 +278,8 @@ def handler_init(event):
         raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
     bucket, key, kms_context = get_config_details(event)
     create_kubeconfig(bucket, key, kms_context)
+    if 'HttpProxy' in event['ResourceProperties'].keys() and event['RequestType'] != 'Delete':
+        enable_proxy(event['ResourceProperties']['HttpProxy'], event['ResourceProperties']['VpcId'])
     if 'Users' in event['ResourceProperties'].keys():
         username = None
         if 'Username' in event['ResourceProperties']['Users'].keys():

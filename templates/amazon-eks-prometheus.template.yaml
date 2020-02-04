@@ -8,8 +8,6 @@ Parameters:
   KubeConfigKmsContext:
     Type: String
     Default: "EKSQuickStart"
-  EksClusterName:
-    Type: String
 Resources:
   # Install prometheus helm chart
   PrometheusHelmChart:

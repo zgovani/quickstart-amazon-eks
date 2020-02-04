@@ -126,7 +126,8 @@ Parameters:
   VPCID:
     Type: "AWS::EC2::VPC::Id"
   PublicSubnet1ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
+    Default: ""
   PublicSubnet2ID:
     Type: String
     Default: ""
@@ -206,14 +207,20 @@ Parameters:
     Type: Number
     MinValue: 0
     Default: 0
+  HttpProxy:
+    Type: String
+    Default: ""
 Conditions:
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
     - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
     - !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
+  EnablePublicSubnets: !Not [!Equals [!Ref PublicSubnet1ID, ""]]
   CreateLambdaZipsBucket: !Equals [!Ref 'LambdaZipsBucketName', '']
   DefaultBastionBootstrap: !Equals [!Ref 'BastionBootstrapScript', '']
-  EnableBastion: !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
+  EnableBastion: !And
+    - !Equals [!Ref 'ProvisionBastionHost', 'Enabled']
+    - !Not [!Equals [!Ref PublicSubnet1ID, ""]]
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
   AdditionalVars: !Not [!Equals [!Ref 'BastionVariables', '']]
   EnableClusterAutoScaler: !Equals [!Ref 'ProvisionClusterAutoScaler', 'Enabled']
@@ -273,6 +280,7 @@ Resources:
     Properties:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-nodegroup.template.yaml'
       Parameters:
+        HttpProxy: !Ref HttpProxy
         KeyPairName: !Ref 'KeyPairName'
         NodeAMIOS: !Ref NodeAMIOS
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
@@ -293,6 +301,9 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
+        KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
+        KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
+        KubeConfigKmsContext: !Ref KubeConfigKmsContext
   BastionSShToNodes:
     Condition: EnableBastion
     Type: "AWS::EC2::SecurityGroupIngress"
@@ -406,12 +417,21 @@ Resources:
       CfnParameters:
         SecurityGroupIds: !Ref ControlPlaneSecurityGroup
         SubnetIds: !If
-          - 3AZDeployment
-          - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID, !Ref PublicSubnet3ID ]]
+          - EnablePublicSubnets
           - !If
-            - 2AZDeployment
-            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID ]]
-            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PublicSubnet1ID ]]
+            - 3AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID, !Ref PublicSubnet3ID ]]
+            - !If
+              - 2AZDeployment
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID ]]
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PublicSubnet1ID ]]
+          - !If
+            - 3AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]]
+            - !If
+              - 2AZDeployment
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
+              - !Join [",", [ !Ref PrivateSubnet1ID ]]
         RoleArn: !GetAtt IamStack.Outputs.ControlPlaneRoleArn
         NodeInstanceRoleArn: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
@@ -465,7 +485,6 @@ Resources:
         HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
         KubeConfigKmsContext: !Ref KubeConfigKmsContext
-        EksClusterName: !GetAtt EKSControlPlane.EKSName
   GrafanaStack:
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
@@ -475,8 +494,6 @@ Resources:
         HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
         KubeConfigKmsContext: !Ref KubeConfigKmsContext
-        EksClusterName: !GetAtt EKSControlPlane.EKSName
-        VPCCIDR: !Ref VPCID
 Outputs:
   KubeConfigPath:
     Value: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"

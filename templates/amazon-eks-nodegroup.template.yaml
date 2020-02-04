@@ -271,7 +271,20 @@ Parameters:
   CustomAmiId:
     Type: String
     Default: ""
+  HttpProxy:
+    Type: String
+    Default: ""
+  KubeManifestLambdaArn:
+    Type: String
+    Default: ""
+  KubeConfigPath:
+    Type: String
+    Default: ""
+  KubeConfigKmsContext:
+    Type: String
+    Default: ""
 Conditions:
+  EnableProxy: !Not [!Equals [!Ref HttpProxy, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
     - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
@@ -664,6 +677,7 @@ Resources:
   NodeGroup:
     Metadata:
       DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
+      DependsOn2: !If [ EnableProxy, !Ref ConfigureProxy, !Ref "AWS::NoValue" ]
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       DesiredCapacity: !Ref NumberOfNodes
@@ -701,6 +715,16 @@ Resources:
         MaxBatchSize: 1
         WaitOnResourceSignals : true
         PauseTime: PT15M
+  ConfigureProxy:
+    Condition: EnableProxy
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Ref KubeManifestLambdaArn
+      KubeConfigPath: !Ref KubeConfigPath
+      KubeConfigKmsContext: !Ref KubeConfigKmsContext
+      HttpProxy: !Ref HttpProxy
+      VpcId: !Ref VPCID
   NodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
@@ -802,41 +826,81 @@ Resources:
             VolumeSize: !Ref NodeVolumeSize
             VolumeType: gp2
             DeleteOnTermination: true
-      UserData: !If
-        - AmznOS
-        - Fn::Base64:
-            !Sub |
+      UserData:
+        Fn::Base64:
+          !Sub
+          - |
             #!/bin/bash
             set -o xtrace
-            /etc/eks/bootstrap.sh ${EKSControlPlane} ${BootstrapArguments}
-            /opt/aws/bin/cfn-signal --exit-code $? \
-                  --stack  ${AWS::StackName} \
-                  --resource NodeGroup  \
+            function signal() {
+              $1/cfn-signal --exit-code $2 \
+                --stack  ${AWS::StackName} \
+                --resource NodeGroup  \
+                --region ${AWS::Region}
+            }
+            ${ProxySetup}
+            ${BootStrap}
+            ${ProxyPostSetup}
+            ${Signal}
+          - ProxySetup: !If
+              - EnableProxy
+              - !Sub |
+                  MAC=$(curl -s http://169.254.169.254/latest/meta-data/mac/)
+                  VPCCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$MAC/vpc-ipv4-cidr-blocks | xargs | tr ' ' ',')
+                  cat <<EOF >> /etc/environment
+                  HTTP_PROXY=${HttpProxy}
+                  HTTPS_PROXY=${HttpProxy}
+                  http_proxy=${HttpProxy}
+                  https_proxy=${HttpProxy}
+                  no_proxy=$VPCCIDR,localhost,127.0.0.1,169.254.169.254,.internal
+                  NO_PROXY=$VPCCIDR,localhost,127.0.0.1,169.254.169.254,.internal
+                  EOF
+                  set -a
+                  source /etc/environment
+              - ""
+            ProxyPostSetup: !If
+              - EnableProxy
+              - |
+                  mkdir -p /etc/systemd/system/docker.service.d
+                  cat <<EOF >> /etc/systemd/system/docker.service.d/proxy.conf
+                  [Service]
+                  EnvironmentFile=/etc/environment
+                  EOF
+                  cat <<EOF >> /etc/systemd/system/kubelet.service.d/proxy.conf
+                  [Service]
+                  EnvironmentFile=/etc/environment
+                  EOF
+                  systemctl daemon-reload
+                  systemctl enable --now --no-block docker
+                  systemctl restart docker
+                  systemctl restart kubelet
+              - ""
+            Signal: !If
+              - AmznOS
+              - |
+                  signal /opt/aws/bin $?
+              - |
+                  signal /usr/bin $?
+                  if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
+                    # Need to enable some kernel boot options and reboot
+                    sed -i 's|GRUB_CMDLINE_LINUX=""|GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1" |' /etc/default/grub
+                    grub2-mkconfig -o /boot/grub2/grub.cfg
+                    reboot
+                  fi
+            BootStrap: !If
+            - AmznOS
+            - !Sub |
+                /etc/eks/bootstrap.sh ${EKSControlPlane} ${BootstrapArguments} || signal /opt/aws/bin $1
+            - !Sub |
+                if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
+                  zypper in -y python2-setuptools
+                  update-alternatives --set easy_install /usr/bin/easy_install-2.7
+                fi
+                easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.zip
+                /usr/bin/cfn-init \
+                  --stack ${AWS::StackName} \
+                  --resource NodeLaunchConfig \
                   --region ${AWS::Region}
-        - Fn::Base64:
-            !Sub |
-            #!/bin/bash -e
-
-            if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
-                zypper in -y python2-setuptools
-                update-alternatives --set easy_install /usr/bin/easy_install-2.7
-            fi
-
-            easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.zip
-            /usr/bin/cfn-init \
-                --stack ${AWS::StackName} \
-                --resource NodeLaunchConfig \
-                --region ${AWS::Region}
-            /usr/bin/cfn-signal --exit-code $? \
-                --stack ${AWS::StackName} \
-                --resource NodeGroup \
-                --region ${AWS::Region}
-            if [ -e /etc/os-release ] && grep SLES /etc/os-release; then
-                # Need to enable some kernel boot options and reboot
-                sed -i 's|GRUB_CMDLINE_LINUX=""|GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1" |' /etc/default/grub
-                grub2-mkconfig -o /boot/grub2/grub.cfg
-                reboot
-            fi
 Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup

@@ -131,6 +131,7 @@ Resources:
                   - eks:*
                   - ec2:DescribeSecurityGroups
                   - ec2:DescribeSubnets
+                  - ec2:DescribeVpcs
                   - lambda:InvokeFunction
                 Resource: "*"
               - Effect: Allow

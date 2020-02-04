@@ -243,8 +243,9 @@ Parameters:
     Type: "AWS::EC2::VPC::Id"
     Description: The ID of your existing VPC (e.g., vpc-0343606e)
   PublicSubnet1ID:
-    Type: "AWS::EC2::Subnet::Id"
+    Type: String
     Description: The ID of the public subnet in Availability Zone 1 in your existing VPC (e.g., subnet-a0246dcd)
+    Default: ""
   PublicSubnet2ID:
     Type: String
     Description: The ID of the public subnet in Availability Zone 2 in your existing VPC (e.g., subnet-b1236eea)
@@ -289,6 +290,10 @@ Parameters:
     MinValue: 0
     Default: 0
     Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
+  HttpProxy:
+    Type: String
+    Default: ""
+    Description: "HTTP(S) proxy configuration, if provided all worker nodes and pod egress traffic will go use this proxy. Example: http://10.101.0.100:3128/"
 Rules:
   EKSSupport:
     Assertions:
@@ -316,6 +321,7 @@ Resources:
     Properties:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks.template.yaml'
       Parameters:
+        HttpProxy: !Ref HttpProxy
         PublicSubnet1ID: !Ref PublicSubnet1ID
         PublicSubnet2ID: !Ref PublicSubnet2ID
         PublicSubnet3ID: !Ref PublicSubnet3ID

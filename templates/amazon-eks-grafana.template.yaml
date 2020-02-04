@@ -8,12 +8,6 @@ Parameters:
   KubeConfigKmsContext:
     Type: String
     Default: "EKSQuickStart"
-  EksClusterName:
-    Type: String
-  VPCCIDR:
-    Default: 10.0.0.0/16
-    Description: The CIDR block for the VPC
-    Type: String  
 Resources:
   # Install grafana helm chart
   GrafanaHelmChart:
