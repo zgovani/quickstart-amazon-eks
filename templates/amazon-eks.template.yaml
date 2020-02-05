@@ -477,6 +477,7 @@ Resources:
   KubeConfigBucket:
     Type: "AWS::S3::Bucket"
   PrometheusStack:
+    DependsOn: EKSControlPlane
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -486,6 +487,7 @@ Resources:
         KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"
         KubeConfigKmsContext: !Ref KubeConfigKmsContext
   GrafanaStack:
+    DependsOn: EKSControlPlane
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
