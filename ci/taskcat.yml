@@ -35,3 +35,8 @@ tests:
     template_file: amazon-eks-master.template.yaml
     regions:
       - ap-southeast-2
+  quickstart-amazon-eks-managed-node-group:
+    parameter_input: amazon-eks-managed-node-group.json
+    template_file: amazon-eks-master.template.yaml
+    regions:
+      - us-east-1
