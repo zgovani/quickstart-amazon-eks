@@ -23,6 +23,9 @@ Metadata:
           - MaxNumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
+          - ManagedNodeGroup
+          - ManagedNodeGroupAMIType
+          - ProvisionClusterAutoScaler
       - Label:
           default: AWS Quick Start Configuration
         Parameters:
@@ -51,6 +54,12 @@ Metadata:
         default: Node Group Name
       NodeVolumeSize:
         default: Node Volume Size
+      ManagedNodeGroup:
+        default: Managed Node Group
+      ManagedNodeGroupAMIType:
+        default: Managed Node Group AMI Type
+      ProvisionClusterAutoScaler:
+        default: Cluster autoscaler
       QSS3BucketName:
         default: Quick Start S3 Bucket Name
       QSS3KeyPrefix:
@@ -229,6 +238,16 @@ Parameters:
     Default: 20
     Description: Size for node volumes
     Type: String
+  ManagedNodeGroup:
+    AllowedValues: [ "yes", "no" ]
+    Default: "no"
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Type: String
+  ManagedNodeGroupAMIType:
+    Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
+    AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU"]
+    Default: "AL2_x86_64"
+    Type: String
   EKSControlPlane:
     Description: Name of the EKS cluster to join
     Type: String
@@ -246,6 +265,8 @@ Parameters:
     Type: String
     AllowedValues: [ "1.14", "1.13", "1.12" ]
     Default: "1.14"
+  EKSClusterName:
+    Type: String
   TargetGroupARNs:
     Type: CommaDelimitedList
     Default: ""
@@ -283,6 +304,11 @@ Parameters:
   KubeConfigKmsContext:
     Type: String
     Default: ""
+  ProvisionClusterAutoScaler:
+    Type: String
+    AllowedValues: [ Enabled, Disabled ]
+    Default: Disabled
+    Description: Choose Enabled to enable Kubernetes cluster autoscaler.
 Conditions:
   EnableProxy: !Not [!Equals [!Ref HttpProxy, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
@@ -305,6 +331,11 @@ Conditions:
   UseCustomAmi: !Not [ !Equals [ !Ref CustomAmiId, "" ] ]
   CleanupSGs:
     !Not [ !Equals [ !Ref CleanupSecurityGroupDependenciesLambdaArn, "" ] ]
+  AutoScalerDisabled: !Equals [ !Ref 'ProvisionClusterAutoScaler', 'Disabled' ]
+  DisableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup' , 'no' ]
+  EnableManagedNodeGroup: !And
+     - !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
+     - !Condition AutoScalerDisabled
 Mappings:
   K8sVersionMap:
     "1.12":
@@ -674,10 +705,28 @@ Resources:
       IpProtocol: tcp
       ToPort: 443
       FromPort: 443
+  NodeInstanceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+      Path: /
   NodeGroup:
     Metadata:
       DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
       DependsOn2: !If [ EnableProxy, !Ref ConfigureProxy, !Ref "AWS::NoValue" ]
+    Condition: DisableManagedNodeGroup
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       DesiredCapacity: !Ref NumberOfNodes
@@ -901,8 +950,38 @@ Resources:
                   --stack ${AWS::StackName} \
                   --resource NodeLaunchConfig \
                   --region ${AWS::Region}
+  EKSNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    Metadata:
+      DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
+    Condition: EnableManagedNodeGroup
+    Properties:
+      ClusterName: !Ref EKSClusterName
+      NodeRole: !GetAtt NodeInstanceRole.Arn
+      AmiType: !If [ EnableManagedNodeGroup, !Ref 'ManagedNodeGroupAMIType', !Ref "AWS::NoValue" ]
+      InstanceTypes:
+        - !Ref 'NodeInstanceType'
+      DiskSize: !Ref NodeVolumeSize
+      ScalingConfig:
+        MinSize: !Ref NumberOfNodes
+        DesiredSize: !Ref NumberOfNodes
+        MaxSize: !If [ MaxNodes, !Ref MaxNumberOfNodes, !Ref NumberOfNodes ]
+      Labels:
+        Key: Name
+        Value: !Sub "${EKSControlPlane}-${NodeGroupName}-Node"
+        PropagateAtLaunch: true
+      Subnets: !If
+      - 3AZDeployment
+      - [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]
+      - !If
+        - 2AZDeployment
+        - [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]
+        - [ !Ref PrivateSubnet1ID ]
 Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup
+  NodeInstanceRole:
+    Description: The node instance role
+    Value: !GetAtt NodeInstanceRole.Arn
   NodeAutoScalingGroup:
-    Value: !Ref NodeGroup
+    Value: !If [ DisableManagedNodeGroup, !Ref 'NodeGroup', !Ref 'EKSNodegroup' ]

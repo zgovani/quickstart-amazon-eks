@@ -37,6 +37,8 @@ Metadata:
           - MaxNumberOfNodes
           - NodeGroupName
           - NodeVolumeSize
+          - ManagedNodeGroup
+          - ManagedNodeGroupAMIType
           - AdditionalEKSAdminArns
           - KubernetesVersion
       - Label:
@@ -89,6 +91,10 @@ Metadata:
         default: Node group name
       NodeVolumeSize:
         default: Node volume size
+      ManagedNodeGroup:
+        default: Managed Node Group
+      ManagedNodeGroupAMIType:
+        default: Managed Node Group AMI Type
       AdditionalEKSAdminArns:
         default: Additional EKS admin ARNs
       KubernetesVersion:
@@ -295,6 +301,16 @@ Parameters:
     Default: 20
     Description: "The size for the node's root EBS volumes."
     Type: String
+  ManagedNodeGroup:
+    AllowedValues: [ "yes", "no" ]
+    Default: "no"
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Type: String
+  ManagedNodeGroupAMIType:
+    Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
+    AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU", ""]
+    Default: "AL2_x86_64"
+    Type: String
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.14", "1.13", "1.12" ]
@@ -360,6 +376,20 @@ Rules:
              - ap-south-1
              - ca-central-1
           - !Ref 'AWS::Region'
+  EKSVersion_ManagedNodeGroup:
+    RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
+    Assertions:
+      - AssertDescription: To use Managed Node Groups you must use EKS version 1.14
+        Assert: !Contains
+          - - '1.14'
+          - !Ref 'KubernetesVersion'
+  ClusterAutoScalerVerification:
+    RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
+    Assertions:
+      - AssertDescription: To use Cluster AutoScaler you should not use Managed Node Groups
+        Assert: !Contains
+          - - 'Disabled'
+          - !Ref 'ClusterAutoScaler'
 Conditions:
   3AZDeployment: !Equals [!Ref NumberOfAZs, "3"]
   2AZDeployment: !Or
@@ -413,6 +443,8 @@ Resources:
         MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
+        ManagedNodeGroup: !Ref ManagedNodeGroup
+        ManagedNodeGroupAMIType: !Ref ManagedNodeGroupAMIType
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
         NodeInstanceType: !Ref NodeInstanceType
         RemoteAccessCIDR: !Ref RemoteAccessCIDR

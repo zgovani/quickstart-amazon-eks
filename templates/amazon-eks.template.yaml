@@ -120,6 +120,16 @@ Parameters:
   NodeVolumeSize:
     Default: 20
     Type: String
+  ManagedNodeGroup:
+    AllowedValues: [ "yes", "no" ]
+    Default: "no"
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Type: String
+  ManagedNodeGroupAMIType:
+    Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
+    AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU"]
+    Default: "AL2_x86_64"
+    Type: String
   LambdaZipsBucketName:
     Type: String
     Default: ''
@@ -226,6 +236,8 @@ Conditions:
   EnableClusterAutoScaler: !Equals [!Ref 'ProvisionClusterAutoScaler', 'Enabled']
   EnableMonitoringPrometheusGrafana: !Equals [!Ref 'ProvisionMonitoringStack', 'Prometheus + Grafana']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
+  DisableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup' , 'no' ]
+  EnableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
 Resources:
   BastionEksPermissions:
     Condition: EnableBastion
@@ -277,6 +289,7 @@ Resources:
         - Joiner: !If [AdditionalVars, ",", ""]
   NodeGroupStack:
     Type: "AWS::CloudFormation::Stack"
+    DependsOn: EKSControlPlane
     Properties:
       TemplateURL: !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/amazon-eks-nodegroup.template.yaml'
       Parameters:
@@ -292,6 +305,8 @@ Resources:
         MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
+        ManagedNodeGroup: !Ref ManagedNodeGroup
+        ManagedNodeGroupAMIType: !Ref ManagedNodeGroupAMIType
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
@@ -300,6 +315,7 @@ Resources:
         BootstrapArguments: !Ref BootstrapArguments
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        EKSClusterName: !GetAtt EKSControlPlane.EKSName
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
         KubeConfigPath: !Sub "s3://${KubeConfigBucket}/.kube/config.enc"

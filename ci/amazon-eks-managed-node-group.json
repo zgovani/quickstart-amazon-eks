@@ -1,0 +1,34 @@
+[
+  {
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "override"
+  },
+  {
+    "ParameterKey": "RemoteAccessCIDR",
+    "ParameterValue": "10.0.0.0/16"
+  },
+  {
+    "ParameterKey": "AvailabilityZones",
+    "ParameterValue": "$[taskcat_genaz_3]"
+  },
+  {
+    "ParameterKey": "QSS3BucketName",
+    "ParameterValue": "$[taskcat_autobucket]"
+  },
+  {
+    "ParameterKey": "AdditionalEKSAdminArns",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "ManagedNodeGroup",
+    "ParameterValue": "yes"
+  },
+  {
+    "ParameterKey": "ManagedNodeGroupAMIType",
+    "ParameterValue": "AL2_x86_64"
+  },
+  {
+    "ParameterKey": "ClusterAutoScaler",
+    "ParameterValue": "Disabled"
+  }
+]
