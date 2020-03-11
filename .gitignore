@@ -1,5 +1,7 @@
 /.idea
 /taskcat_outputs
 /venv
-/ci/dev-config.yml
+/.venv
 .DS_Store
+/.taskcat
+/functions/packages
