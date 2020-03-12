@@ -31,7 +31,10 @@ Metadata:
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
+          - QSS3BucketRegion
     ParameterLabels:
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       KeyPairName:
         default: SSH Key Name
       NodeAMIOS:
@@ -289,6 +292,11 @@ Parameters:
       can include numbers, lowercase letters, uppercase letters, hyphens (-), dots(.) and
       forward slash (/).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is
+      hosted. When using your own bucket, you must specify this value.
+    Type: String
   CustomAmiId:
     Type: String
     Default: ""
@@ -336,6 +344,7 @@ Conditions:
   EnableManagedNodeGroup: !And
      - !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
      - !Condition AutoScalerDisabled
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Mappings:
   K8sVersionMap:
     "1.12":
@@ -718,9 +727,9 @@ Resources:
             Action:
               - "sts:AssumeRole"
       ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
       Path: /
   NodeGroup:
     Metadata:
@@ -780,56 +789,80 @@ Resources:
       AWS::CloudFormation::Authentication:
         S3Auth:
           buckets:
-            - !Ref QSS3BucketName
+            - !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
           roleName: !Ref NodeInstanceRoleName
           type: S3
       AWS::CloudFormation::Init:
         config:
           files:
             /tmp/worker/bootstrap.sh:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/bootstrap.sh
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/bootstrap.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/docker-daemon.json:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/docker-daemon.json
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/docker-daemon.json'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/eni-max-pods.txt:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/eni-max-pods.txt
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/eni-max-pods.txt'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/install-worker.sh:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/install-worker.sh
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/install-worker.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000755'
               authentication: S3Auth
             /tmp/worker/kubelet-config.json:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/kubelet-config.json
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/kubelet-config.json'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/kubelet-kubeconfig:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/kubelet-kubeconfig
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/kubelet-kubeconfig'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/kubelet.service:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/kubelet.service
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/kubelet.service'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
               authentication: S3Auth
             /tmp/worker/logrotate-kube-proxy:
-              source: !Sub https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/amazon-eks/logrotate-kube-proxy
+              source: !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/logrotate-kube-proxy'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               group: root
               owner: root
               mode: '000644'
@@ -945,7 +978,7 @@ Resources:
                   zypper in -y python2-setuptools
                   update-alternatives --set easy_install /usr/bin/easy_install-2.7
                 fi
-                easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.zip
+                easy_install https://cloudformation-examples.s3.amazonaws.com/aws-cfn-bootstrap-latest.zip
                 /usr/bin/cfn-init \
                   --stack ${AWS::StackName} \
                   --resource NodeLaunchConfig \

@@ -43,6 +43,7 @@ Conditions:
   CreateDeleteBucketContentsRole: !Equals [!Ref 'DeleteLambdaZipsBucketContents', "True"]
   EnableBastionRole: !Equals [!Ref CreateBastionRole, "Enabled"]
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   DeleteBucketContentsRole:
     Condition: CreateDeleteBucketContentsRole
@@ -56,7 +57,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         - PolicyName: deletebucketcontents
           PolicyDocument:
@@ -65,8 +66,8 @@ Resources:
               - Effect: Allow
                 Action: s3:*
                 Resource:
-                  - !Sub 'arn:aws:s3:::${LambdaZipsBucketName}/*'
-                  - !Sub 'arn:aws:s3:::${LambdaZipsBucketName}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}'
   CopyZipsRole:
     Type: AWS::IAM::Role
     Properties:
@@ -78,7 +79,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         - PolicyName: lambda-copier
           PolicyDocument:
@@ -86,12 +87,14 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: s3:GetObject
-                Resource: !Sub 'arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*'
+                Resource: !Sub
+                  - 'arn:${AWS::Partition}:s3:::${BucketName}/${QSS3KeyPrefix}*'
+                  - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               - Effect: Allow
                 Action:
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub 'arn:aws:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}*'
+                Resource: !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}*'
   ControlPlaneProvisionRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -113,7 +116,7 @@ Resources:
             - CustomBastionRole
             - Effect: Allow
               Principal:
-                AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${BastionIAMRoleName}'
+                AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${BastionIAMRoleName}'
               Action: sts:AssumeRole
             - !Ref AWS::NoValue
           - Effect: Allow
@@ -136,7 +139,9 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action: s3:GetObject
-                Resource: !Sub "arn:aws:s3:::${QSS3BucketName}/*"
+                Resource: !Sub
+                  - "arn:${AWS::Partition}:s3:::${BucketName}/*"
+                  - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
@@ -152,7 +157,7 @@ Resources:
                 Resource: "*"
               - Action: "s3:GetObject"
                 Effect: Allow
-                Resource: !Sub "arn:aws:s3:::${KubeConfigBucket}/${KubeConfigKey}"
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${KubeConfigBucket}/${KubeConfigKey}"
               - Effect: Allow
                 Action:
                   - lambda:AddPermission
@@ -176,8 +181,8 @@ Resources:
               Service: eks.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSClusterPolicy'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSServicePolicy'
   ControlPlanePassRole:
     Type: "AWS::IAM::Policy"
     Properties:
@@ -227,7 +232,7 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - arn:aws:logs:*:*:*
+                  - !Sub 'arn:${AWS::Partition}:logs:*:*:*'
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -248,10 +253,10 @@ Resources:
               - sts:AssumeRole
       Path: "/"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonElasticFileSystemReadOnlyAccess
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSWorkerNodePolicy'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKS_CNI_Policy'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonElasticFileSystemReadOnlyAccess'
       Policies:
         - PolicyName: QSBucketAccess
           PolicyDocument:
@@ -259,7 +264,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: s3:GetObject
-                Resource: !Sub "arn:aws:s3:::${QSS3BucketName}/${QSS3KeyPrefix}*"
+                Resource: !Sub
+                 - "arn:${AWS::Partition}:s3:::${BucketName}/${QSS3KeyPrefix}*"
+                 - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
   BastionRole:
     Condition: EnableBastionRole
     Type: "AWS::IAM::Role"
@@ -278,7 +285,9 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: s3:GetObject
-                Resource: !Sub "arn:aws:s3:::${QSS3BucketName}/*"
+                Resource: !Sub
+                  - "arn:${AWS::Partition}:s3:::${BucketName}/*"
+                  - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               - Effect: Allow
                 Action:
                   - logs:CreateLogStream
@@ -289,7 +298,7 @@ Resources:
                   - logs:PutRetentionPolicy
                   - logs:PutMetricFilter
                   - logs:CreateLogGroup
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
               - Effect: Allow
                 Action:
                   - ec2:AssociateAddress
@@ -297,7 +306,7 @@ Resources:
                   - eks:ListClusters
                 Resource: "*"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
   KubeConfigUploadRole:
     Type: AWS::IAM::Role
     Properties:
@@ -319,13 +328,13 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Effect: Allow
-                Resource: "arn:aws:logs:*:*:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
               - Action:
                   - 's3:PutObject'
                   - 's3:PutObjectAcl'
                   - 's3:DeleteObject'
                 Effect: Allow
-                Resource: !Sub "arn:aws:s3:::${KubeConfigBucket}/${KubeConfigKey}"
+                Resource: !Sub "arn:${AWS::Partition}:s3:::${KubeConfigBucket}/${KubeConfigKey}"
               - Action: "kms:encrypt"
                 Effect: Allow
                 Resource: "*"
@@ -350,7 +359,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Effect: Allow
-                Resource: "arn:aws:logs:*:*:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
               - Action:
                   - 'elasticloadbalancing:DescribeLoadBalancers'
                   - 'elasticloadbalancing:DescribeTags'
@@ -384,7 +393,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Effect: Allow
-                Resource: "arn:aws:logs:*:*:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
               - Action:
                   - 'ec2:DescribeNetworkInterfaces'
                   - 'ec2:DescribeSecurityGroups'
@@ -415,7 +424,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Effect: Allow
-                Resource: "arn:aws:logs:*:*:*"
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
               - Action:
                   - 'cloudformation:DescribeStacks'
                   - 'cloudtrail:LookupEvents'

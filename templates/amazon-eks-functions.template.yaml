@@ -54,13 +54,14 @@ Conditions:
   CreateDeleteBucketContentsLambda: !Equals
     - !Ref 'DeleteLambdaZipsBucketContents'
     - "True"
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   CopyZips:
     Type: Custom::CopyZips
     Properties:
       ServiceToken: !GetAtt 'CopyZipsFunction.Arn'
       DestBucket: !Ref LambdaZipsBucketName
-      SourceBucket: !Ref 'QSS3BucketName'
+      SourceBucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Prefix: !Ref 'QSS3KeyPrefix'
       Objects:
       - functions/packages/Helm/lambda.zip

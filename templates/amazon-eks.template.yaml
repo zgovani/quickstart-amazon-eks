@@ -17,6 +17,11 @@ Parameters:
     AllowedPattern: ^[0-9a-zA-Z-/.]*$
     Default: quickstart-amazon-eks/
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is
+      hosted. When using your own bucket, you must specify this value.
+    Type: String
   RemoteAccessCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     Type: String
@@ -238,6 +243,7 @@ Conditions:
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
   DisableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup' , 'no' ]
   EnableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   BastionEksPermissions:
     Condition: EnableBastion
@@ -268,12 +274,13 @@ Resources:
         KeyPairName: !Ref KeyPairName
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Sub '${QSS3KeyPrefix}submodules/quickstart-linux-bastion/'
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
         BastionInstanceType: !Ref BastionInstanceType
         RootVolumeSize: !Ref BastionRootVolumeSize
         AlternativeInitializationScript: !If
           - DefaultBastionBootstrap
-          - !Sub 'https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
+          - !Sub 'https://${QSS3BucketName}.s3.${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
           - !Ref BastionBootstrapScript
         AlternativeIAMRole: !If [CustomBastionRole, !Ref BastionIAMRoleName, !GetAtt IamStack.Outputs.BastionRole]
         BastionAMIOS: !Ref BastionOS
@@ -315,6 +322,7 @@ Resources:
         BootstrapArguments: !Ref BootstrapArguments
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         EKSClusterName: !GetAtt EKSControlPlane.EKSName
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
@@ -470,7 +478,7 @@ Resources:
         {
           "Sid": "root access",
           "Effect": "Allow",
-          "Principal": {"AWS": !Sub "arn:aws:iam::${AWS::AccountId}:root"},
+          "Principal": {"AWS": !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"},
           "Action": "kms:*",
           "Resource": "*"
         },
