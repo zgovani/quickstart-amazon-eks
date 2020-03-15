@@ -55,7 +55,7 @@ Metadata:
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
-          - QSS3BucketName
+          - QSS3BucketRegion
           - LambdaZipsBucketName
     ParameterLabels:
       AvailabilityZones:
