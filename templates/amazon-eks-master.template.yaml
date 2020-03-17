@@ -321,8 +321,8 @@ Parameters:
     Type: String
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.14", "1.13", "1.12" ]
-    Default: "1.14"
+    AllowedValues: [ "1.15", "1.14", "1.13" ]
+    Default: "1.15"
     Description: The Kubernetes control plane version.
   LambdaZipsBucketName:
     Description: '[OPTIONAL] The name of the S3 bucket where the Lambda zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
@@ -387,9 +387,9 @@ Rules:
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
     Assertions:
-      - AssertDescription: To use Managed Node Groups you must use EKS version 1.14
+      - AssertDescription: To use Managed Node Groups you must use EKS version 1.14 or higher
         Assert: !Contains
-          - - '1.14'
+          - [ '1.15', '1.14' ]
           - !Ref 'KubernetesVersion'
   ClusterAutoScalerVerification:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -403,7 +403,7 @@ Conditions:
   2AZDeployment: !Or
     - !Equals [!Ref NumberOfAZs, "2"]
     - !Equals [!Ref NumberOfAZs, "3"]
-  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quckstart']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack

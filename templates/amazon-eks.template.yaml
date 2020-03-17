@@ -125,6 +125,9 @@ Parameters:
   NodeVolumeSize:
     Default: 20
     Type: String
+  CustomAmiId:
+    Default: ""
+    Type: String
   ManagedNodeGroup:
     AllowedValues: [ "yes", "no" ]
     Default: "no"
@@ -159,8 +162,8 @@ Parameters:
     Default: ""
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.14", "1.13", "1.12" ]
-    Default: "1.14"
+    AllowedValues: [ "1.15", "1.14", "1.13" ]
+    Default: "1.15"
   ProvisionClusterAutoScaler:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
@@ -321,6 +324,7 @@ Resources:
         MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
+        CustomAmiId: !Ref CustomAmiId
         ManagedNodeGroup: !Ref ManagedNodeGroup
         ManagedNodeGroupAMIType: !Ref ManagedNodeGroupAMIType
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName

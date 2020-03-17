@@ -1,6 +1,6 @@
 FROM lambci/lambda:build-python3.7
 
-ENV VERSION="1.14.6/2019-08-22"
+ENV VERSION="1.15.10/2020-02-22"
 
 COPY . .
 
