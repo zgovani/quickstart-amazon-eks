@@ -125,6 +125,9 @@ Parameters:
   NodeVolumeSize:
     Default: 20
     Type: String
+  CustomAmiId:
+    Default: ""
+    Type: String
   ManagedNodeGroup:
     AllowedValues: [ "yes", "no" ]
     Default: "no"
@@ -321,6 +324,7 @@ Resources:
         MaxNumberOfNodes: !Ref MaxNumberOfNodes
         NodeGroupName: !Ref NodeGroupName
         NodeVolumeSize: !Ref NodeVolumeSize
+        CustomAmiId: !Ref CustomAmiId
         ManagedNodeGroup: !Ref ManagedNodeGroup
         ManagedNodeGroupAMIType: !Ref ManagedNodeGroupAMIType
         EKSControlPlane: !GetAtt EKSControlPlane.EKSName
