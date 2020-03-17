@@ -271,8 +271,6 @@ Parameters:
     Type: String
     AllowedValues: [ "1.14", "1.13", "1.12" ]
     Default: "1.14"
-  EKSClusterName:
-    Type: String
   TargetGroupARNs:
     Type: CommaDelimitedList
     Default: ""
