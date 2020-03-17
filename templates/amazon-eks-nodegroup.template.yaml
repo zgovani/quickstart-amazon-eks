@@ -18,6 +18,7 @@ Metadata:
       - Label:
           default: EKS Configuration
         Parameters:
+          - EKSControlPlane
           - NodeInstanceType
           - NumberOfNodes
           - MaxNumberOfNodes
@@ -47,6 +48,8 @@ Metadata:
         default: Private Subnet 3 ID
       VPCID:
         default: VPC ID
+      EKSControlPlane:
+        defualt: Eks Control plane name
       NodeInstanceType:
         default: Nodes Instance Type
       NumberOfNodes:
@@ -605,7 +608,7 @@ Mappings:
       SLES15EKS113: ami-0772af912976aa692
       SLES15EKS113GPU: ami-0772af912976aa692
       SLES15EKS112: ami-0772af912976aa692
-      SLES15EKS112GPU: ami-0772af912976aa692  
+      SLES15EKS112GPU: ami-0772af912976aa692
     us-east-1:
       AMZNEKS114: ami-08ac00d99a673bad0
       AMZNEKS114GPU: ami-000dbfddbb743f0a3
@@ -989,7 +992,7 @@ Resources:
       DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
     Condition: EnableManagedNodeGroup
     Properties:
-      ClusterName: !Ref EKSClusterName
+      ClusterName: !Ref EKSControlPlane
       NodeRole: !GetAtt NodeInstanceRole.Arn
       AmiType: !If [ EnableManagedNodeGroup, !Ref 'ManagedNodeGroupAMIType', !Ref "AWS::NoValue" ]
       InstanceTypes:
