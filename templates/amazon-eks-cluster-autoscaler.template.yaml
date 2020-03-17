@@ -25,11 +25,11 @@ Parameters:
 Mappings:
   K8sVersionMap:
     "1.13":
-      ImageTag: v1.13.8
+      ImageTag: v1.13.9
     "1.14":
-      ImageTag: v1.14.6
+      ImageTag: v1.14.7
     "1.15":
-      ImageTag: v1.15.10
+      ImageTag: v1.15.5
 Resources:
   # Policy to apply to NodeInstanceRole
   ClusterAutoScalerPolicy:
