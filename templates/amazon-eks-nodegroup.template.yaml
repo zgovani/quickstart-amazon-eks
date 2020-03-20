@@ -345,6 +345,10 @@ Conditions:
      - !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
      - !Condition AutoScalerDisabled
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  GreaterThan114: !Not
+    - !Or
+      - !Equals [ !Ref 'KubernetesVersion', '1.14' ]
+      - !Equals [ !Ref 'KubernetesVersion', '1.13' ]
 Mappings:
   K8sVersionMap:
     "1.13":
@@ -857,9 +861,10 @@ Resources:
               authentication: S3Auth
             /tmp/worker/kubelet.service:
               source: !Sub
-                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/kubelet.service'
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/amazon-eks/kubelet.service${Version}'
                 - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
                   S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+                  Version: !If [GreaterThan114, ".1.15", ""]
               group: root
               owner: root
               mode: '000644'
