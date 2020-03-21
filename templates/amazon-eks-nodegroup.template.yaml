@@ -18,6 +18,7 @@ Metadata:
       - Label:
           default: EKS Configuration
         Parameters:
+          - EKSControlPlane
           - NodeInstanceType
           - NumberOfNodes
           - MaxNumberOfNodes
@@ -47,6 +48,8 @@ Metadata:
         default: Private Subnet 3 ID
       VPCID:
         default: VPC ID
+      EKSControlPlane:
+        defualt: Eks Control plane name
       NodeInstanceType:
         default: Nodes Instance Type
       NumberOfNodes:
@@ -1000,7 +1003,7 @@ Resources:
       DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
     Condition: EnableManagedNodeGroup
     Properties:
-      ClusterName: !Ref EKSClusterName
+      ClusterName: !Ref EKSControlPlane
       NodeRole: !GetAtt NodeInstanceRole.Arn
       AmiType: !If [ EnableManagedNodeGroup, !Ref 'ManagedNodeGroupAMIType', !Ref "AWS::NoValue" ]
       InstanceTypes:
