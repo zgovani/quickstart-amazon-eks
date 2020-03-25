@@ -331,6 +331,7 @@ Resources:
         ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
         NodeInstanceProfile: !GetAtt IamStack.Outputs.NodeInstanceProfile
         NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
+        NodeInstanceRoleArn: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
         KubernetesVersion: !Ref KubernetesVersion
         BootstrapArguments: !Ref BootstrapArguments
         QSS3BucketName: !Ref QSS3BucketName
