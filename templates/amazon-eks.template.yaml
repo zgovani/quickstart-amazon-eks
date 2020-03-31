@@ -134,7 +134,7 @@ Parameters:
     Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
     Type: String
   ManagedNodeGroupAMIType:
-    Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
+    Description: Select one of the two AMI types for your managed node group (only applies if you chose "yes" for ManagedNodeGroup). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
     AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU"]
     Default: "AL2_x86_64"
     Type: String
@@ -162,7 +162,7 @@ Parameters:
     Default: ""
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.15", "1.14", "1.13" ]
+    AllowedValues: [ "1.13", "1.14", "1.15" ]
     Default: "1.15"
   ProvisionClusterAutoScaler:
     Type: String
