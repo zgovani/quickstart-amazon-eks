@@ -29,6 +29,7 @@ Metadata:
           default: Amazon EC2 configuration
         Parameters:
           - KeyPairName
+          - ProvisionBastionHost
       - Label:
           default: Amazon EKS configuration
         Parameters:
@@ -108,6 +109,8 @@ Metadata:
         default: EFS throughput mode
       EfsProvisionedThroughputInMibps:
         default: EFS provisioned throughput in Mibps
+      ProvisionBastionHost:
+        default: Provision Bastion Host
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -318,6 +321,11 @@ Parameters:
     Type: String
     Default: ""
     Description: "HTTP(S) proxy configuration, if provided all worker nodes and pod egress traffic will go use this proxy. Example: http://10.101.0.100:3128/"
+  ProvisionBastionHost:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Enabled"
+    Description: "Skip creating a bastion host by setting this is set to Disabled."
 Rules:
   EKSSupport:
     Assertions:
@@ -392,6 +400,7 @@ Resources:
         EfsPerformanceMode: !Ref EfsPerformanceMode
         EfsThroughputMode: !Ref EfsThroughputMode
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
+        ProvisionBastionHost: !Ref ProvisionBastionHost
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath

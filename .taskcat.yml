@@ -24,6 +24,12 @@ tests:
   quickstart-amazon-eks-defaults:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
+  quickstart-amazon-eks-no-bastion:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ProvisionBastionHost: Disabled
+    regions:
+      - eu-north-1
   quickstart-amazon-eks-cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]

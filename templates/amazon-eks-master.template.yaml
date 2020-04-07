@@ -25,6 +25,7 @@ Metadata:
           - PublicSubnet2CIDR
           - PublicSubnet3CIDR
           - RemoteAccessCIDR
+          - ProvisionBastionHost
       - Label:
           default: Amazon EC2 configuration
         Parameters:
@@ -118,6 +119,8 @@ Metadata:
         default: Monitoring Stack
       NumberOfAZs:
         default: Number of Availability Zones
+      ProvisionBastionHost:
+        default: Provision Bastion Host
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -316,7 +319,7 @@ Parameters:
     Type: String
   ManagedNodeGroupAMIType:
     Description: Select one of the two AMI types for your managed node group (only applies if you chose "yes" for ManagedNodeGroup). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
-    AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU", ""]
+    AllowedValues: [ "AL2_x86_64", "AL2_x86_64_GPU", ""]
     Default: "AL2_x86_64"
     Type: String
   KubernetesVersion:
@@ -363,6 +366,11 @@ Parameters:
     AllowedValues: ["2", "3"]
     Default: "3"
     Description: Number of Availability Zones to use in the VPC. This must match your selections in the list of Availability Zones parameter.
+  ProvisionBastionHost:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Enabled"
+    Description: "Skip creating a bastion host by setting this is set to Disabled."
 Rules:
   EKSSupport:
     Assertions:
@@ -473,6 +481,7 @@ Resources:
         EfsThroughputMode: !Ref EfsThroughputMode
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionMonitoringStack: !Ref MonitoringStack
+        ProvisionBastionHost: !Ref ProvisionBastionHost
 Outputs:
   KubeConfigPath:
     Value: !GetAtt EKSStack.Outputs.KubeConfigPath
