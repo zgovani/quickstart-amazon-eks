@@ -305,7 +305,9 @@ Resources:
         - Joiner: !If [AdditionalVars, ",", ""]
   NodeGroupStack:
     Type: "AWS::CloudFormation::Stack"
-    DependsOn: EKSControlPlane
+    DependsOn:
+      - EKSControlPlane
+      - IamStack
     Properties:
       TemplateURL: !Sub
         - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-nodegroup.template.yaml'
