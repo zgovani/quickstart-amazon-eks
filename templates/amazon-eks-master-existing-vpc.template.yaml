@@ -39,7 +39,8 @@ Metadata:
           - NodeVolumeSize
           - ManagedNodeGroup
           - ManagedNodeGroupAMIType
-          - AdditionalEKSAdminArns
+          - AdditionalEKSAdminUserArn
+          - AdditionalEKSAdminRoleArn
           - KubernetesVersion
       - Label:
           default: AWS Quick Start configuration
@@ -93,8 +94,10 @@ Metadata:
         default: Private subnet 3 ID
       VPCID:
         default: VPC ID
-      AdditionalEKSAdminArns:
-        default: Additional EKS admin ARNs
+      AdditionalEKSAdminUserArn:
+        default: Additional EKS admin ARN (IAM User)
+      AdditionalEKSAdminRoleArn:
+        default: Additional EKS admin ARN (IAM Role)
       KubernetesVersion:
         default: Kubernetes version
       LambdaZipsBucketName:
@@ -145,10 +148,14 @@ Parameters:
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
     Description: The CIDR IP range that is permitted to access the instances. We recommend that you set this value to a trusted IP range.
     Type: String
-  AdditionalEKSAdminArns:
+  AdditionalEKSAdminUserArn:
     Default: ""
-    Description: "[OPTIONAL] Comma separated list of IAM user/role Amazon Resource Names (ARNs) to be granted admin access to the EKS cluster"
-    Type: CommaDelimitedList
+    Description: "[OPTIONAL] IAM user Amazon Resource Name (ARN) to be granted admin access to the EKS cluster"
+    Type: String
+  AdditionalEKSAdminRoleArn:
+    Default: ""
+    Description: "[OPTIONAL] IAM role Amazon Resource Name (ARN) to be granted admin access to the EKS cluster"
+    Type: String
   NodeInstanceType:
     Default: t3.medium
     AllowedValues:
@@ -250,7 +257,7 @@ Parameters:
   ManagedNodeGroup:
     AllowedValues: [ "yes", "no" ]
     Default: "no"
-    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes version 1.14 or higher.
     Type: String
   ManagedNodeGroupAMIType:
     Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
@@ -392,7 +399,8 @@ Resources:
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
         NodeInstanceType: !Ref NodeInstanceType
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
-        AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
+        AdditionalEKSAdminUserArn: !Ref AdditionalEKSAdminUserArn
+        AdditionalEKSAdminRoleArn: !Ref AdditionalEKSAdminRoleArn
         VPCID: !Ref VPCID
         KubernetesVersion: !Ref KubernetesVersion
         ProvisionClusterAutoScaler: !Ref ClusterAutoScaler
@@ -402,8 +410,6 @@ Resources:
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionBastionHost: !Ref ProvisionBastionHost
 Outputs:
-  KubeConfigPath:
-    Value: !GetAtt EKSStack.Outputs.KubeConfigPath
   HelmLambdaArn:
     Value: !GetAtt EKSStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:

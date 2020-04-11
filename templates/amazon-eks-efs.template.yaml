@@ -2,12 +2,11 @@
 # template https://github.com/aws-quickstart/quickstart-cloudbees-core/blob/master/templates/cloudbees-core-efs.template.yaml
 AWSTemplateFormatVersion: 2010-09-09
 Description: Deploys an EFS file system and efs-provisioner (qs-1pipqrqhi)
+Metadata:
+  QSLint:
+    Exclusions: [W9002, W9003, W9004, W9006]
 Parameters:
   HelmLambdaArn:
-    Type: String
-  KubeConfigPath:
-    Type: String
-  KubeConfigKmsContext:
     Type: String
   NodeGroupSecurityGroup:
     Type: AWS::EC2::SecurityGroup::Id
@@ -82,8 +81,6 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Ref HelmLambdaArn
-      KubeConfigPath: !Ref KubeConfigPath
-      KubeConfigKmsContext: !Ref KubeConfigKmsContext
       Namespace: efs-provisioner
       Chart: stable/efs-provisioner
       Values:

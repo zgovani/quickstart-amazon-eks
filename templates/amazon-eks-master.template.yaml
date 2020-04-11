@@ -40,7 +40,8 @@ Metadata:
           - NodeVolumeSize
           - ManagedNodeGroup
           - ManagedNodeGroupAMIType
-          - AdditionalEKSAdminArns
+          - AdditionalEKSAdminUserArn
+          - AdditionalEKSAdminRoleArn
           - KubernetesVersion
       - Label:
           default: Optional Kubernetes add-ins
@@ -99,8 +100,10 @@ Metadata:
         default: Managed node group
       ManagedNodeGroupAMIType:
         default: Managed node group AMI type
-      AdditionalEKSAdminArns:
-        default: Additional EKS admin ARNs
+      AdditionalEKSAdminUserArn:
+        default: Additional EKS admin ARN (IAM User)
+      AdditionalEKSAdminRoleArn:
+        default: Additional EKS admin ARN (IAM Role)
       KubernetesVersion:
         default: Kubernetes version
       LambdaZipsBucketName:
@@ -206,10 +209,14 @@ Parameters:
     Default: 10.0.0.0/16
     Description: The CIDR block for the VPC
     Type: String
-  AdditionalEKSAdminArns:
+  AdditionalEKSAdminUserArn:
     Default: ""
-    Description: "[OPTIONAL] Comma separated list of IAM user/role Amazon Resource Names (ARNs) to be granted admin access to the EKS cluster"
-    Type: CommaDelimitedList
+    Description: "[OPTIONAL] IAM user Amazon Resource Name (ARN) to be granted admin access to the EKS cluster"
+    Type: String
+  AdditionalEKSAdminRoleArn:
+    Default: ""
+    Description: "[OPTIONAL] IAM role Amazon Resource Name (ARN) to be granted admin access to the EKS cluster"
+    Type: String
   NodeInstanceType:
     Default: t3.medium
     AllowedValues:
@@ -472,7 +479,8 @@ Resources:
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
         NodeInstanceType: !Ref NodeInstanceType
         RemoteAccessCIDR: !Ref RemoteAccessCIDR
-        AdditionalEKSAdminArns: !Join [ ",", !Ref AdditionalEKSAdminArns ]
+        AdditionalEKSAdminUserArn: !Ref AdditionalEKSAdminUserArn
+        AdditionalEKSAdminRoleArn: !Ref AdditionalEKSAdminRoleArn
         VPCID: !GetAtt VPCStack.Outputs.VPCID
         KubernetesVersion: !Ref KubernetesVersion
         ProvisionClusterAutoScaler: !Ref ClusterAutoScaler
@@ -483,8 +491,6 @@ Resources:
         ProvisionMonitoringStack: !Ref MonitoringStack
         ProvisionBastionHost: !Ref ProvisionBastionHost
 Outputs:
-  KubeConfigPath:
-    Value: !GetAtt EKSStack.Outputs.KubeConfigPath
   HelmLambdaArn:
     Value: !GetAtt EKSStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:

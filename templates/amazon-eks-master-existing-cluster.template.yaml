@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "deploy an example workload into an existing kubernetes cluster (qs-1p817r5f9)"
 Parameters:
-  KubeConfigPath:
-    Type: String
-  KubeConfigKmsContext:
-    Type: String
-    Default: "EKSQuickStart"
   KubeClusterName:
     Type: String
   NodeInstanceProfile:
@@ -61,8 +56,6 @@ Resources:
       Parameters:
         KubeManifestLambdaArn: !GetAtt KubeManifestLambda.Arn
         HelmLambdaArn: !GetAtt HelmLambda.Arn
-        KubeConfigPath: !Ref KubeConfigPath
-        KubeConfigKmsContext: !Ref KubeConfigKmsContext
         KubeClusterName: !Ref KubeClusterName
         NodeInstanceProfile: !Ref NodeInstanceProfile
   CopyZips:

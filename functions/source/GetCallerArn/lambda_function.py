@@ -4,6 +4,7 @@ from datetime import timedelta
 from time import sleep
 import boto3
 from crhelper import CfnResource
+import traceback
 
 logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
@@ -16,18 +17,14 @@ except Exception as init_exception:
 
 
 def get_caller_arn(stack_id):
-    stack_properties = cfn_client.describe_stacks(StackName=stack_id)['Stacks'][0]
     try:
-        parent_id = [t for t in stack_properties['Tags'] if t['Key'] == 'ParentStackId'][0]['Value']
+        root_id = cfn_client.describe_stacks(StackName=stack_id)['Stacks'][0]['RootId']
     except ValueError:
+        traceback.print_exc()
         return "NotFound"
     except IndexError:
+        traceback.print_exc()
         return "NotFound"
-    root_id = parent_id
-    try:
-        root_id = cfn_client.describe_stacks(StackName=parent_id)['Stacks'][0]['RootId']
-    except ValueError:
-        pass
     create_time = cfn_client.describe_stacks(StackName=root_id)['Stacks'][0]['CreationTime']
     retries = 50
     while True:
@@ -47,6 +44,7 @@ def get_caller_arn(stack_id):
         except Exception as e:
             logger.error(str(e), exc_info=True)
         if retries == 0:
+            print("Ran out of retries!")
             return "NotFound"
         sleep(15)
 
@@ -55,12 +53,11 @@ def sts_to_role(sts_arn):
     logger.debug(f"arn from cloudtrail: {sts_arn}")
     if not sts_arn.startswith('arn:aws:sts::') or not sts_arn.split('/')[0].endswith('assumed-role'):
         return sts_arn
-    acct_id = sts_arn.split(":")[4]
     if len(sts_arn.split('/')) < 2:
         logger.error(f"failed to parse calling arn {sts_arn}")
         return "NotFound"
     role_name = sts_arn.split('/')[1]
-    return f"arn:aws:iam::{acct_id}:role/{role_name}"
+    return f'{":".join(sts_arn.split(":")[:-1])}:role/{role_name}'
 
 
 @helper.create

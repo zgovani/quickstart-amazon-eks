@@ -5,11 +5,6 @@ Parameters:
     Type: String
   HelmLambdaArn:
     Type: String
-  KubeConfigPath:
-    Type: String
-  KubeConfigKmsContext:
-    Type: String
-    Default: "EKSQuickStart"
   KubeClusterName:
     Type: String
   NodeInstanceProfile:
@@ -30,10 +25,6 @@ Resources:
     Properties:
       # The lambda function that executes the manifest against the cluster. This is created in one of the parent stacks
       ServiceToken: !Ref KubeManifestLambdaArn
-      # S3 path to the encrypted config file eg. s3://my-bucket/kube/config.encrypted
-      KubeConfigPath: !Ref KubeConfigPath
-      # context for KMS to use when decrypting the file
-      KubeConfigKmsContext: !Ref KubeConfigKmsContext
       # Kubernetes manifest
       Manifest:
         apiVersion: v1
@@ -61,8 +52,6 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Ref HelmLambdaArn
-      KubeConfigPath: !Ref KubeConfigPath
-      KubeConfigKmsContext: !Ref KubeConfigKmsContext
       # If the chart is not in the stable repo then supply a repo url
       RepoUrl: https://svc-catalog-charts.storage.googleapis.com
       # namespace is optional, in most cases it's best to leave this out so that a namespace is dynamically generated.

@@ -309,12 +309,6 @@ Parameters:
   KubeManifestLambdaArn:
     Type: String
     Default: ""
-  KubeConfigPath:
-    Type: String
-    Default: ""
-  KubeConfigKmsContext:
-    Type: String
-    Default: ""
   ProvisionClusterAutoScaler:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
@@ -775,8 +769,6 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Ref KubeManifestLambdaArn
-      KubeConfigPath: !Ref KubeConfigPath
-      KubeConfigKmsContext: !Ref KubeConfigKmsContext
       HttpProxy: !Ref HttpProxy
       VpcId: !Ref VPCID
   NodeLaunchConfig:
