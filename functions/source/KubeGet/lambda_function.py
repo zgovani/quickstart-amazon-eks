@@ -3,11 +3,10 @@ import logging
 import boto3
 import subprocess
 import shlex
-import os
 import time
 from hashlib import md5
 from crhelper import CfnResource
-from time import sleep
+
 
 logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
@@ -30,44 +29,9 @@ def run_command(command):
     return output
 
 
-def create_kubeconfig(bucket, key, kms_context):
-    try:
-        os.mkdir("/tmp/.kube/")
-    except FileExistsError:
-        pass
-    print("s3_client.get_object(Bucket='%s', Key='%s')" % (bucket, key))
-    try:
-        retries = 10
-        while True:
-            try:
-                enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
-                break
-            except Exception as e:
-                logger.error(str(e), exc_info=True)
-                if retries == 0:
-                    raise
-                sleep(10)
-                retries -= 1
-    except Exception as e:
-        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
-    kubeconf = kms_client.decrypt(
-        CiphertextBlob=enc_config,
-        EncryptionContext=kms_context
-    )['Plaintext'].decode('utf8')
-    f = open("/tmp/.kube/config", "w")
-    f.write(kubeconf)
-    f.close()
-    os.environ["KUBECONFIG"] = "/tmp/.kube/config"
-
-
-def get_config_details(event):
-    s3_uri_parts = event['ResourceProperties']['KubeConfigPath'].split('/')
-    if len(s3_uri_parts) < 4 or s3_uri_parts[0:2] != ['s3:', '']:
-        raise Exception("Invalid KubeConfigPath, must be in the format s3://bucket-name/path/to/config")
-    bucket = s3_uri_parts[2]
-    key = "/".join(s3_uri_parts[3:])
-    kms_context = {"QSContext": event['ResourceProperties']['KubeConfigKmsContext']}
-    return bucket, key, kms_context
+def create_kubeconfig(cluster_name):
+    run_command(f"aws eks update-kubeconfig --name {cluster_name} --alias {cluster_name}")
+    run_command(f"kubectl config use-context {cluster_name}")
 
 
 @helper.create
@@ -76,8 +40,7 @@ def create_handler(event, _):
     print('Received event: %s' % json.dumps(event))
     if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
         raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
-    bucket, key, kms_context = get_config_details(event)
-    create_kubeconfig(bucket, key, kms_context)
+    create_kubeconfig(event['ResourceProperties']['ClusterName'])
     name = event['ResourceProperties']['Name']
     retry_timeout = 0
     if "Timeout" in event['ResourceProperties']:

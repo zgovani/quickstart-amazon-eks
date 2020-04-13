@@ -60,6 +60,7 @@ Resources:
     Version: "1.0"
     Properties:
       ServiceToken: !Ref HelmLambdaArn
+      ClusterName: !Ref EksClusterName
       Namespace: kube-system
       Chart: stable/cluster-autoscaler
       Values:

@@ -26,9 +26,15 @@ Parameters:
     Type: String
     AllowedValues: [ "1.15", "1.14", "1.13" ]
     Default: "1.15"
+  BastionRoleArn:
+    Type: String
+    Default: ""
+  FunctionRoleArn:
+    Type: String
 Conditions:
   AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, ""] ]
   AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, ""] ]
+  BastionRole: !Not [ !Equals [ !Ref BastionRoleArn, ""] ]
 Resources:
   EKS:
     Type: "AWSQS::EKS::Cluster"
@@ -43,6 +49,15 @@ Resources:
           - Arn: !Ref NodeInstanceRoleArn
             Username: 'system:node:{{EC2PrivateDNSName}}'
             Groups: [ 'system:bootstrappers', 'system:nodes' ]
+          - Arn: !Ref FunctionRoleArn
+            Username: !Ref FunctionRoleArn
+            Groups: [ 'system:masters' ]
+          - !If
+            - BastionRole
+            - Arn: !Ref BastionRoleArn
+              Username: !Ref BastionRoleArn
+              Groups: [ 'system:masters' ]
+            - !Ref 'AWS::NoValue'
           - !If
             - AddRole
             - Arn: !Ref AdditionalEKSAdminRoleArn

@@ -30,6 +30,8 @@ Parameters:
     Type: String
     AllowedValues: [ bursting, provisioned ]
     Default: bursting
+  ClusterName:
+    Type: String
 Rules:
   ProvisionedThroughput:
     RuleCondition: !Equals [ !Ref ThroughputMode, provisioned ]
@@ -81,6 +83,7 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Ref HelmLambdaArn
+      ClusterName: !Ref ClusterName
       Namespace: efs-provisioner
       Chart: stable/efs-provisioner
       Values:

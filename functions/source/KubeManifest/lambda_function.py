@@ -3,7 +3,6 @@ import logging
 import boto3
 import subprocess
 import shlex
-import os
 import re
 from ruamel import yaml
 from datetime import date, datetime
@@ -42,33 +41,9 @@ def run_command(command):
             retries += 1
 
 
-def create_kubeconfig(bucket, key, kms_context):
-    try:
-        os.mkdir("/tmp/.kube/")
-    except FileExistsError:
-        pass
-    try:
-        retries = 10
-        while True:
-            try:
-                enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
-                break
-            except Exception as e:
-                logger.error(str(e), exc_info=True)
-                if retries == 0:
-                    raise
-                sleep(10)
-                retries -= 1
-    except Exception as e:
-        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
-    kubeconf = kms_client.decrypt(
-        CiphertextBlob=enc_config,
-        EncryptionContext=kms_context
-    )['Plaintext'].decode('utf8')
-    f = open("/tmp/.kube/config", "w")
-    f.write(kubeconf)
-    f.close()
-    os.environ["KUBECONFIG"] = "/tmp/.kube/config"
+def create_kubeconfig(cluster_name):
+    run_command(f"aws eks update-kubeconfig --name {cluster_name} --alias {cluster_name}")
+    run_command(f"kubectl config use-context {cluster_name}")
 
 
 def json_serial(o):
@@ -103,16 +78,6 @@ def build_output(kube_response):
         if key in kube_response["metadata"].keys():
             outp[key] = kube_response["metadata"][key]
     return outp
-
-
-def get_config_details(event):
-    s3_uri_parts = event['ResourceProperties']['KubeConfigPath'].split('/')
-    if len(s3_uri_parts) < 4 or s3_uri_parts[0:2] != ['s3:', '']:
-        raise Exception("Invalid KubeConfigPath, must be in the format s3://bucket-name/path/to/config")
-    bucket = s3_uri_parts[2]
-    key = "/".join(s3_uri_parts[3:])
-    kms_context = {"QSContext": event['ResourceProperties']['KubeConfigKmsContext']}
-    return bucket, key, kms_context
 
 
 def traverse(obj, path=None, callback=None):
@@ -185,54 +150,6 @@ def fix_types(manifest):
     return traverse_modify_all(manifest, set_type)
 
 
-def aws_auth_configmap(arns, groups, username=None, delete=False):
-    new = False
-    outp = ''
-    try:
-        outp = run_command("kubectl get configmap/aws-auth -n kube-system -o yaml")
-    except Exception as e:
-        if 'configmaps "aws-auth" not found' not in str(e):
-            raise
-        new = True
-    if new:
-        aws_auth = {
-            "apiVersion": "v1",
-            "kind": "ConfigMap",
-            "metadata": {"name": "aws-auth", "namespace": "kube-system"},
-            "data": {}
-        }
-    else:
-        aws_auth = yaml.safe_load(outp)
-    maps = {"role": [], "user": []}
-    if 'mapRoles' in aws_auth['data'].keys():
-        maps['role'] = yaml.safe_load(aws_auth['data']['mapRoles'])
-    if 'mapUsers' in aws_auth['data'].keys():
-        maps['user'] = yaml.safe_load(aws_auth['data']['mapUsers'])
-    for arn in arns:
-        if arn != 'NotFound':
-            iam_type = arn.split(':')[5].split("/")[0]
-            if iam_type == 'root':
-                iam_type = 'user'
-            entry = {
-                "%sarn" % iam_type: arn,
-                "username": username if username else arn,
-                "groups": groups
-            }
-            if not delete:
-                maps[iam_type].append(entry)
-            else:
-                maps[iam_type] = [value for value in maps[iam_type] if value != entry]
-    if maps['role']:
-        aws_auth['data']['mapRoles'] = yaml.dump(maps['role'], default_flow_style=False)
-    if maps['user']:
-        aws_auth['data']['mapUsers'] = yaml.dump(maps['user'], default_flow_style=False)
-    logger.debug(yaml.dump(aws_auth, default_flow_style=False))
-    write_manifest(aws_auth, '/tmp/aws-auth.json')
-    kw = 'create' if new else 'replace'
-    outp = run_command("kubectl %s -f /tmp/aws-auth.json --save-config" % kw)
-    logger.debug(outp)
-
-
 def enable_proxy(proxy_host, vpc_id):
     configmap = {
             "apiVersion": "v1",
@@ -274,29 +191,9 @@ def handler_init(event):
 
     physical_resource_id = None
     manifest_file = None
-    if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
-        raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
-    bucket, key, kms_context = get_config_details(event)
-    create_kubeconfig(bucket, key, kms_context)
+    create_kubeconfig(event['ResourceProperties']['ClusterName'])
     if 'HttpProxy' in event['ResourceProperties'].keys() and event['RequestType'] != 'Delete':
         enable_proxy(event['ResourceProperties']['HttpProxy'], event['ResourceProperties']['VpcId'])
-    if 'Users' in event['ResourceProperties'].keys():
-        username = None
-        if 'Username' in event['ResourceProperties']['Users'].keys():
-            username = event['ResourceProperties']['Users']['Username']
-        if event['RequestType'] == 'Delete':
-            aws_auth_configmap(
-                event['ResourceProperties']['Users']['Arns'],
-                event['ResourceProperties']['Users']['Groups'],
-                username,
-                delete=True
-            )
-        else:
-            aws_auth_configmap(
-                event['ResourceProperties']['Users']['Arns'],
-                event['ResourceProperties']['Users']['Groups'],
-                username
-            )
     if 'Manifest' in event['ResourceProperties'].keys():
         manifest_file = '/tmp/manifest.json'
         if "PhysicalResourceId" in event.keys():

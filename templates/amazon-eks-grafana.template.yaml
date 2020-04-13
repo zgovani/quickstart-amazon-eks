@@ -6,6 +6,8 @@ Metadata:
 Parameters:
   HelmLambdaArn:
     Type: String
+  ClusterName:
+    Type: String
 Resources:
   # Install grafana helm chart
   GrafanaHelmChart:
@@ -13,6 +15,7 @@ Resources:
     Version: "1.0"
     Properties:
       ServiceToken: !Ref HelmLambdaArn
+      ClusterName: !Ref ClusterName
       Namespace: grafana
       Chart: stable/grafana
       Name: grafana

@@ -25,6 +25,7 @@ Resources:
     Properties:
       # The lambda function that executes the manifest against the cluster. This is created in one of the parent stacks
       ServiceToken: !Ref KubeManifestLambdaArn
+      ClusterName: !Ref KubeClusterName
       # Kubernetes manifest
       Manifest:
         apiVersion: v1
@@ -52,6 +53,7 @@ Resources:
     Version: '1.0'
     Properties:
       ServiceToken: !Ref HelmLambdaArn
+      ClusterName: !Ref KubeClusterName
       # If the chart is not in the stable repo then supply a repo url
       RepoUrl: https://svc-catalog-charts.storage.googleapis.com
       # namespace is optional, in most cases it's best to leave this out so that a namespace is dynamically generated.

@@ -417,8 +417,6 @@ users:
         - "token"
         - "-i"
         - "${K8S_CLUSTER_NAME}"
-        - "-r"
-        - "${K8S_ROLE_ARN}"
 EOF
     cp -r /home/${user}/.kube/ /root/.kube/
     chown -R ${user}:${user_group} /home/${user}/.kube/

@@ -121,26 +121,12 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource: !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}*'
-  ControlPlaneProvisionRole:
+  KubernetesAdminRole:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-          - !If
-            - EnableBastionRole
-            - Effect: Allow
-              Principal:
-                AWS: !GetAtt BastionRole.Arn
-              Action: sts:AssumeRole
-            - !Ref AWS::NoValue
-          - !If
-            - CustomBastionRole
-            - Effect: Allow
-              Principal:
-                AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${BastionIAMRoleName}'
-              Action: sts:AssumeRole
-            - !Ref AWS::NoValue
           - Effect: Allow
             Principal:
               Service: lambda.amazonaws.com
@@ -160,11 +146,6 @@ Resources:
                   - lambda:InvokeFunction
                 Resource: "*"
               - Effect: Allow
-                Action: s3:GetObject
-                Resource: !Sub
-                  - "arn:${AWS::Partition}:s3:::${BucketName}/*"
-                  - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-              - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
@@ -174,9 +155,6 @@ Resources:
                   - ec2:DeleteNetworkInterface
                 Resource:
                   - "*"
-              - Action: "kms:decrypt"
-                Effect: Allow
-                Resource: "*"
               - Effect: Allow
                 Action:
                   - lambda:AddPermission
@@ -202,17 +180,6 @@ Resources:
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSClusterPolicy'
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSServicePolicy'
-  ControlPlanePassRole:
-    Type: "AWS::IAM::Policy"
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource: !GetAtt ControlPlaneRole.Arn
-      PolicyName: !Sub "${AWS::StackName}-ControlPlanePassRole"
-      Roles: [ !Ref ControlPlaneProvisionRole ]
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -287,6 +254,8 @@ Resources:
                 Resource: "*"
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy'
   CleanupLoadBalancersRole:
     Type: AWS::IAM::Role
     Properties:
@@ -419,7 +388,7 @@ Resources:
             Action: sts:AssumeRole
       Path: "/"
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         - PolicyName: ResourceTypePolicy
           PolicyDocument:
@@ -467,8 +436,8 @@ Outputs:
     Value: !GetAtt CopyZipsRole.Arn
   ControlPlaneRoleArn:
     Value: !GetAtt ControlPlaneRole.Arn
-  ControlPlaneProvisionRoleArn:
-    Value: !GetAtt ControlPlaneProvisionRole.Arn
+  KubernetesAdminRoleArn:
+    Value: !GetAtt KubernetesAdminRole.Arn
   NodeInstanceProfile:
     Value: !Ref NodeInstanceProfile
   NodeInstanceRoleArn:
@@ -476,7 +445,7 @@ Outputs:
   NodeInstanceRoleName:
     Value: !Ref NodeInstanceRole
   BastionRole:
-    Value: !If [EnableBastionRole, !Ref BastionRole, ""]
+    Value: !If [EnableBastionRole, !Ref BastionRole, !Ref BastionIAMRoleName]
   CleanupLoadBalancersRoleArn:
     Value: !GetAtt CleanupLoadBalancersRole.Arn
   CleanupSecurityGroupDependenciesRoleArn:

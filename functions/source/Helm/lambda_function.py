@@ -2,13 +2,11 @@ import json
 import boto3
 import subprocess
 import shlex
-import os
 import random
 import re
 from crhelper import CfnResource
 import logging
 import string
-from time import sleep
 from datetime import datetime
 import requests
 
@@ -53,33 +51,9 @@ def run_command(command):
         return output
 
 
-def create_kubeconfig(bucket, key, kms_context):
-    try:
-        os.mkdir("/tmp/.kube/")
-    except FileExistsError:
-        pass
-    try:
-        retries = 10
-        while True:
-            try:
-                enc_config = s3_client.get_object(Bucket=bucket, Key=key)['Body'].read()
-                break
-            except Exception as e:
-                logger.error(str(e), exc_info=True)
-                if retries == 0:
-                    raise
-                sleep(10)
-                retries -= 1
-    except Exception as e:
-        raise Exception("Failed to fetch KubeConfig from S3: %s" % str(e))
-    kubeconf = kms_client.decrypt(
-        CiphertextBlob=enc_config,
-        EncryptionContext=kms_context
-    )['Plaintext'].decode('utf8')
-    f = open("/tmp/.kube/config", "w")
-    f.write(kubeconf)
-    f.close()
-    os.environ["KUBECONFIG"] = "/tmp/.kube/config"
+def create_kubeconfig(cluster_name):
+    run_command(f"aws eks update-kubeconfig --name {cluster_name} --alias {cluster_name}")
+    run_command(f"kubectl config use-context {cluster_name}")
 
 
 def parse_install_output(output):
@@ -121,16 +95,6 @@ def get_next_index(data, resource_type):
     return index
 
 
-def get_config_details(event):
-    s3_uri_parts = event['ResourceProperties']['KubeConfigPath'].split('/')
-    if len(s3_uri_parts) < 4 or s3_uri_parts[0:2] != ['s3:', '']:
-        raise Exception("Invalid KubeConfigPath, must be in the format s3://bucket-name/path/to/config")
-    bucket = s3_uri_parts[2]
-    key = "/".join(s3_uri_parts[3:])
-    kms_context = {"QSContext": event['ResourceProperties']['KubeConfigKmsContext']}
-    return bucket, key, kms_context
-
-
 def write_values(manifest, path):
     f = open(path, "w")
     f.write(manifest)
@@ -152,10 +116,7 @@ def helm_init(event):
     except KeyError:
         helper.Data.update({"StartTimestamp": str(datetime.now().timestamp())})
     physical_resource_id = None
-    if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
-        raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
-    bucket, key, kms_context = get_config_details(event)
-    create_kubeconfig(bucket, key, kms_context)
+    create_kubeconfig(event['ResourceProperties']['ClusterName'])
     run_command("helm --home /tmp/.helm init --client-only")
     repo_name = ''
     if 'Chart' in event['ResourceProperties'].keys():
@@ -233,7 +194,7 @@ def build_flags(properties, request_type="Create"):
 
 
 def _trim_event_for_poll(event):
-    needed_keys = ['Chart', 'RepoUrl', 'Namespace', 'KubeConfigPath', 'KubeConfigKmsContext', 'TimeoutMinutes']
+    needed_keys = ['Chart', 'RepoUrl', 'Namespace', 'ClusterName', 'TimeoutMinutes']
     trimmable = []
     for prop in event['ResourceProperties'].keys():
         if prop not in needed_keys:
