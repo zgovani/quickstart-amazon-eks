@@ -18,8 +18,7 @@ ASSUME_ROLE_POLICY_DOCUMENT = """{
       "Action": "sts:AssumeRole"
     }
   ]
-}
-"""
+}"""
 POLICIES = [
     'arn:{}:iam::aws:policy/service-role/AWSLambdaENIManagementAccess',
     'arn:{}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
