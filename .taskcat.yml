@@ -39,6 +39,7 @@ tests:
       ProvisionBastionHost: Enabled
     regions:
       - eu-north-1
+      - cn-northwest-1
   cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
