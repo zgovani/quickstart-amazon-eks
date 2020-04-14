@@ -55,8 +55,6 @@ Parameters:
     Type: String
   ExecutionRoleArn:
     Type: String
-  EKSSecurityGroupId:
-    Type: String
   EKSSubnetIds:
     Type: List<String>
 Conditions:
