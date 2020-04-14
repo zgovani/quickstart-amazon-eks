@@ -524,7 +524,7 @@ Resources:
         KubernetesVersion: !Ref KubernetesVersion
         CleanupLoadBalancersLambdaArn: !GetAtt FunctionStack.Outputs.CleanupLoadBalancersLambdaArn
         GetCallerArnLambdaArn: !GetAtt FunctionStack.Outputs.GetCallerArnLambdaArn
-        BastionRoleArn: !GetAtt IamStack.Outputs.BastionRole
+        BastionRole: !GetAtt IamStack.Outputs.BastionRole
         FunctionRoleArn: !GetAtt IamStack.Outputs.KubernetesAdminRoleArn
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint

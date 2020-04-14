@@ -26,7 +26,7 @@ Parameters:
     Type: String
     AllowedValues: [ "1.15", "1.14", "1.13" ]
     Default: "1.15"
-  BastionRoleArn:
+  BastionRole:
     Type: String
     Default: ""
   FunctionRoleArn:
@@ -55,7 +55,7 @@ Parameters:
 Conditions:
   AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, "" ] ]
   AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, "" ] ]
-  BastionRole: !Not [ !Equals [ !Ref BastionRoleArn, "" ] ]
+  BastionRole: !Not [ !Equals [ !Ref BastionRole, "" ] ]
   EnablePrivateEndpoint: !Equals [ !Ref EKSPrivateAccessEndpoint, "Enabled" ]
   EnablePublicEndpoint: !Equals [ !Ref EKSPublicAccessEndpoint, "Enabled" ]
   CreateKey: !And
@@ -110,8 +110,8 @@ Resources:
             Groups: [ 'system:masters' ]
           - !If
             - BastionRole
-            - Arn: !Ref BastionRoleArn
-              Username: !Ref BastionRoleArn
+            - Arn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${BastionRole}"
+              Username: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${BastionRole}"
               Groups: [ 'system:masters' ]
             - !Ref 'AWS::NoValue'
           - !If
