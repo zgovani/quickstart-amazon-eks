@@ -13,8 +13,6 @@ project:
   - ap-northeast-1
   - ap-southeast-1
   - ap-southeast-2
-  - cn-northwest-1
-  - cn-north-1
   template: templates/amazon-eks-master.template.yaml
   parameters:
     RemoteAccessCIDR: 10.0.0.0/16
@@ -39,7 +37,6 @@ tests:
       ProvisionBastionHost: Enabled
     regions:
       - eu-north-1
-      - cn-northwest-1
   cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
