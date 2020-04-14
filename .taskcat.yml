@@ -20,6 +20,7 @@ project:
     RemoteAccessCIDR: 10.0.0.0/16
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
+    ProvisionBastionHost: Disabled
   lambda_source_path: functions/source
   lambda_zip_path: functions/packages
 tests:
@@ -32,10 +33,10 @@ tests:
       EKSPublicAccessEndpoint: Enabled
     regions:
       - ap-northeast-2
-  no-bastion:
+  with-bastion:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
-      ProvisionBastionHost: Disabled
+      ProvisionBastionHost: Enabled
     regions:
       - eu-north-1
   cluster-autoscaler:
