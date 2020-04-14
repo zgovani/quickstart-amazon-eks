@@ -15,7 +15,9 @@ def stabilize(token, cfn):
         sleep(5)
         p = cfn.describe_type_registration(RegistrationToken=token)
     if p['ProgressStatus'] == 'FAILED':
-        raise Exception(f"Failed to register resource {p}")
+        if 'to finish before submitting another deployment request for ' not in p['Description']:
+            raise Exception(f"Failed to register resource {p}")
+        return None
     return p['TypeVersionArn']
 
 
@@ -33,10 +35,10 @@ def register(event, _):
         },
         "ExecutionRoleArn": event['ResourceProperties']['ExecutionRoleArn']
     }
-
     response = cfn.register_type(**kwargs)
     version_arn = stabilize(response['RegistrationToken'], cfn)
-    cfn.set_type_default_version(Arn=version_arn)
+    if version_arn:
+        cfn.set_type_default_version(Arn=version_arn)
     return version_arn
 
 
