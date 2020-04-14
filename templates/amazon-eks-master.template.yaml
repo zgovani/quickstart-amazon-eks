@@ -10,6 +10,10 @@ Metadata:
     - EfsStorageClass
     - Lambda
     - maxIO
+    - Resource Name
+    - Enabled
+    - Disabled
+    - Prometheus
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -43,6 +47,10 @@ Metadata:
           - AdditionalEKSAdminUserArn
           - AdditionalEKSAdminRoleArn
           - KubernetesVersion
+          - EKSPublicAccessEndpoint
+          - EKSPublicAccessCIDRs
+          - EKSPrivateAccessEndpoint
+          - EKSClusterLoggingTypes
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -101,9 +109,9 @@ Metadata:
       ManagedNodeGroupAMIType:
         default: Managed node group AMI type
       AdditionalEKSAdminUserArn:
-        default: Additional EKS admin ARN (IAM User)
+        default: Additional EKS admin ARN (IAM user)
       AdditionalEKSAdminRoleArn:
-        default: Additional EKS admin ARN (IAM Role)
+        default: Additional EKS admin ARN (IAM role)
       KubernetesVersion:
         default: Kubernetes version
       LambdaZipsBucketName:
@@ -119,11 +127,19 @@ Metadata:
       EfsProvisionedThroughputInMibps:
         default: EFS provisioned throughput in Mibps
       MonitoringStack:
-        default: Monitoring Stack
+        default: Monitoring stack
       NumberOfAZs:
         default: Number of Availability Zones
       ProvisionBastionHost:
-        default: Provision Bastion Host
+        default: Provision bastion host
+      EKSPrivateAccessEndpoint:
+        default: EKS private access endpoint
+      EKSPublicAccessEndpoint:
+        default: EKS public access endpoint
+      EKSPublicAccessCIDRs:
+        default: EKS public access CIDRs
+      EKSClusterLoggingTypes:
+        default: EKS cluster logging types
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -203,6 +219,41 @@ Parameters:
     Description: The CIDR IP range that is permitted to access the instances. We recommend
       that you set this value to a trusted IP range.
     Type: String
+  EKSPublicAccessCIDRs:
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/x
+    Description: The public CIDR IP ranges that are permitted to access the Kubernetes API. These values are only used
+      if EKSPublicAccessEndpoint is enabled. Can't contain private IP ranges.
+    Type: List<String>
+    Default: 0.0.0.0/0
+  EKSPublicAccessEndpoint:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Disabled
+    Description: Configure access to the Kubernetes API server endpoint from outside of your VPC.
+  EKSPrivateAccessEndpoint:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Enabled
+    Description: Configure access to the Kubernetes API server endpoint from within your VPC. If this is disabled,
+      EKSPublicAccessEndpoint must be enabled.
+  EKSClusterLoggingTypes:
+    Type: List<String>
+    Default: "api,audit,authenticator,controllerManager,scheduler"
+    AllowedPattern: "^(api|audit|authenticator|controllerManager|scheduler|,)*$"
+    ConstraintDescription: Valid logging types are api, audit, authenticator, controllerManager, scheduler.
+    Description: EKS cluster control plane logs to be exported to CloudWatch Logs.
+  EKSEncryptSecrets:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Enabled
+    Description: Envelope encryption of Kubernetes secrets using KMS.
+  EKSEncryptSecretsKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: "[OPTIONAL] KMS key to use for envelope encryption of Kubernetes secrets. If this parameter is omitted
+      A key will be created for the cluster. The CMK must be symmetric, created in the same region as the cluster, and
+      if the CMK was created in a different account, the user must have access to the CMK."
   VPCCIDR:
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(1[6-9]|2[0-8]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
@@ -322,7 +373,7 @@ Parameters:
   ManagedNodeGroup:
     AllowedValues: [ "yes", "no" ]
     Default: "no"
-    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes version 1.14 or higher.
     Type: String
   ManagedNodeGroupAMIType:
     Description: Select one of the two AMI types for your managed node group (only applies if you chose "yes" for ManagedNodeGroup). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
@@ -342,7 +393,7 @@ Parameters:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
     Default: Disabled
-    Description: Choose Enabled to enable Kubernetes cluster autoscaler.
+    Description: Choose "Enabled" to enable Kubernetes cluster autoscaler.
   EfsStorageClass:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
@@ -367,7 +418,7 @@ Parameters:
     Type: String
     AllowedValues: [ "Prometheus + Grafana", "None" ]
     Default: "None"
-    Description: Enable Monitoring stack with "Prometheus+Grafana"
+    Description: Enable monitoring stack with "Prometheus+Grafana"
   NumberOfAZs:
     Type: String
     AllowedValues: ["2", "3"]
@@ -490,6 +541,12 @@ Resources:
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionMonitoringStack: !Ref MonitoringStack
         ProvisionBastionHost: !Ref ProvisionBastionHost
+        EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
+        EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
+        EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint
+        EKSClusterLoggingTypes: !Join [ ',', !Ref 'EKSClusterLoggingTypes' ]
+        EKSEncryptSecrets: !Ref EKSEncryptSecrets
+        EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
 Outputs:
   HelmLambdaArn:
     Value: !GetAtt EKSStack.Outputs.HelmLambdaArn

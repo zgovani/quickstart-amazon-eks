@@ -31,17 +31,73 @@ Parameters:
     Default: ""
   FunctionRoleArn:
     Type: String
+  EKSPublicAccessCIDRs:
+    Type: List<String>
+    Default: 0.0.0.0/0
+  EKSPublicAccessEndpoint:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Disabled
+  EKSPrivateAccessEndpoint:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Enabled
+  EKSClusterLoggingTypes:
+    Type: List<String>
+    Default: ""
+  EKSEncryptSecrets:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Enabled
+  EKSEncryptSecretsKmsKeyArn:
+    Type: String
+    Default: ""
 Conditions:
-  AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, ""] ]
-  AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, ""] ]
-  BastionRole: !Not [ !Equals [ !Ref BastionRoleArn, ""] ]
+  AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, "" ] ]
+  AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, "" ] ]
+  BastionRole: !Not [ !Equals [ !Ref BastionRoleArn, "" ] ]
+  EnablePrivateEndpoint: !Equals [ !Ref EKSPrivateAccessEndpoint, "Enabled" ]
+  EnablePublicEndpoint: !Equals [ !Ref EKSPublicAccessEndpoint, "Enabled" ]
+  CreateKey: !And
+    - !Equals [ !Ref EKSEncryptSecretsKmsKeyArn, "" ]
+    - !Equals [ !Ref EKSEncryptSecrets, Enabled ]
+  EnableEncryption: !Equals [ !Ref EKSEncryptSecrets, Enabled ]
 Resources:
+  KMSKey:
+    Condition: CreateKey
+    Type: "AWS::KMS::Key"
+    Properties:
+      KeyPolicy: {
+        "Version": "2012-10-17",
+        "Id": "key-default-1",
+        "Statement": [
+          {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+          }
+        ]
+      }
   EKS:
     Type: "AWSQS::EKS::Cluster"
     Properties:
       ResourcesVpcConfig:
         SecurityGroupIds: !Ref SecurityGroupIds
         SubnetIds: !Ref SubnetIds
+        PublicAccessCidrs: !Ref EKSPublicAccessCIDRs
+        EndpointPrivateAccess: !If [ EnablePrivateEndpoint, true, false ]
+        EndpointPublicAccess: !If [ EnablePublicEndpoint, true, false ]
+      EnabledClusterLoggingTypes: !Ref EKSClusterLoggingTypes
+      EncryptionConfig: !If
+        - EnableEncryption
+        - - Resources: [ secrets ]
+            Provider:
+              KeyArn: !If [ CreateKey, !GetAtt KMSKey.Arn, !Ref EKSEncryptSecretsKmsKeyArn ]
+        - !Ref AWS::NoValue
       RoleArn: !Ref RoleArn
       Version: !Ref KubernetesVersion
       KubernetesApiAccess:
