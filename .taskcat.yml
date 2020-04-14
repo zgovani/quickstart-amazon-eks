@@ -21,28 +21,34 @@ project:
   lambda_source_path: functions/source
   lambda_zip_path: functions/packages
 tests:
-  quickstart-amazon-eks-defaults:
+  defaults:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
-  quickstart-amazon-eks-no-bastion:
+  public-endpoint:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      EKSPublicAccessEndpoint: Enabled
+    regions:
+      - ap-northeast-2
+  no-bastion:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ProvisionBastionHost: Disabled
     regions:
       - eu-north-1
-  quickstart-amazon-eks-cluster-autoscaler:
+  cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ClusterAutoScaler: Enabled
     regions:
     - eu-central-1
-  quickstart-amazon-eks-efs:
+  efs:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       EfsStorageClass: Enabled
     regions:
     - us-west-2
-  quickstart-amazon-eks-managed-node-group:
+  managed-node-group:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ClusterAutoScaler: Disabled
@@ -50,13 +56,13 @@ tests:
       ManagedNodeGroupAMIType: AL2_x86_64
     regions:
     - us-east-1
-  quickstart-amazon-eks-monitoring-prom-graf:
+  monitoring-prom-graf:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       MonitoringStack: Prometheus + Grafana
     regions:
     - ap-southeast-2
-  quickstart-amazon-eks-2az:
+  2az:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
       NumberOfAZs: "2"
