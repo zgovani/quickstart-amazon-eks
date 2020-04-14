@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
 
 ROLE_NAME = "CloudFormation-Kubernetes-VPC"
-ASSUME_ROLE_POLICY_DOCUMENT = """
-{
+ASSUME_ROLE_POLICY_DOCUMENT = """{
   "Version": "2012-10-17",
   "Statement": [
     {
