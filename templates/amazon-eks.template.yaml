@@ -428,6 +428,23 @@ Resources:
         RegisterTypeRoleArn: !GetAtt IamStack.Outputs.RegisterTypeRoleArn
         ExecutionRoleArn: !GetAtt IamStack.Outputs.ExecutionRoleArn
         LogRoleArn: !GetAtt IamStack.Outputs.LogDeliveryRoleArn
+        EKSSecurityGroupId: !Ref ControlPlaneSecurityGroup
+        EKSSubnetIds: !If
+          - EnablePublicSubnets
+          - !If
+            - 3AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID, !Ref PublicSubnet3ID ]]
+            - !If
+              - 2AZDeployment
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PublicSubnet1ID, !Ref PublicSubnet2ID ]]
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PublicSubnet1ID ]]
+          - !If
+            - 3AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]]
+            - !If
+              - 2AZDeployment
+              - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
+              - !Join [",", [ !Ref PrivateSubnet1ID ]]
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
     Type: AWS::CloudFormation::Stack
