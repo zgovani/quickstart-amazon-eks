@@ -14,6 +14,7 @@ Metadata:
     - Enabled
     - Disabled
     - Prometheus
+    - Encrypt
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -51,6 +52,8 @@ Metadata:
           - EKSPublicAccessCIDRs
           - EKSPrivateAccessEndpoint
           - EKSClusterLoggingTypes
+          - EKSEncryptSecrets
+          - EKSEncryptSecretsKmsKeyArn
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -140,6 +143,10 @@ Metadata:
         default: EKS public access CIDRs
       EKSClusterLoggingTypes:
         default: EKS cluster logging types
+      EKSEncryptSecrets:
+        default: Encrypt EKS secrets
+      EKSEncryptSecretsKmsKeyArn:
+        default: Encrypt EKS secrets KMS key ARN
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three

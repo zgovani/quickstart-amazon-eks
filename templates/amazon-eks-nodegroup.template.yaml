@@ -4,19 +4,25 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Network Configuration
+          default: Network configuration
         Parameters:
           - VPCID
           - PrivateSubnet1ID
           - PrivateSubnet2ID
           - PrivateSubnet3ID
       - Label:
-          default: Amazon EC2 Configuration
+          default: Amazon EC2 configuration
         Parameters:
           - KeyPairName
           - NodeAMIOS
+          - NodeInstanceProfile
+          - NodeInstanceRoleName
+          - NodeInstanceRoleArn
+          - BootstrapArguments
+          - HttpProxy
+          - CustomAmiId
       - Label:
-          default: EKS Configuration
+          default: EKS configuration
         Parameters:
           - EKSControlPlane
           - NodeInstanceType
@@ -27,19 +33,24 @@ Metadata:
           - ManagedNodeGroup
           - ManagedNodeGroupAMIType
           - ProvisionClusterAutoScaler
+          - ControlPlaneSecurityGroup
+          - KubernetesVersion
+          - TargetGroupARNs
       - Label:
-          default: AWS Quick Start Configuration
+          default: AWS Quick Start configuration
         Parameters:
           - QSS3BucketName
           - QSS3KeyPrefix
           - QSS3BucketRegion
+          - CleanupSecurityGroupDependenciesLambdaArn
+          - KubeManifestLambdaArn
     ParameterLabels:
       QSS3BucketRegion:
         default: Quick Start S3 bucket region
       KeyPairName:
-        default: SSH Key Name
+        default: SSH key name
       NodeAMIOS:
-        default: Node AMI Operating System
+        default: Node AMI operating system
       PrivateSubnet1ID:
         default: Private Subnet 1 ID
       PrivateSubnet2ID:
@@ -49,27 +60,49 @@ Metadata:
       VPCID:
         default: VPC ID
       EKSControlPlane:
-        defualt: Eks Control plane name
+        default: EKS cluster name
       NodeInstanceType:
-        default: Nodes Instance Type
+        default: Nodes instance type
       NumberOfNodes:
-        default: Number of Nodes
+        default: Number of nodes
       MaxNumberOfNodes:
-        default: Maximum number of Nodes
+        default: Maximum number of nodes
       NodeGroupName:
-        default: Node Group Name
+        default: Node group name
       NodeVolumeSize:
-        default: Node Volume Size
+        default: Node volume size
       ManagedNodeGroup:
         default: Managed Node Group
       ManagedNodeGroupAMIType:
-        default: Managed Node Group AMI Type
+        default: Managed Node Group AMI type
       ProvisionClusterAutoScaler:
         default: Cluster autoscaler
       QSS3BucketName:
-        default: Quick Start S3 Bucket Name
+        default: Quick Start S3 bucket name
       QSS3KeyPrefix:
-        default: Quick Start S3 Key Prefix
+        default: Quick Start S3 key prefix
+      CleanupSecurityGroupDependenciesLambdaArn:
+        default: Cleanup Security Group dependencies Lambda ARN
+      BootstrapArguments:
+        default: Bootstrap arguments
+      ControlPlaneSecurityGroup:
+        default: Control plane Security Group
+      NodeInstanceProfile:
+        default: Node instance profile
+      NodeInstanceRoleName:
+        default: Node instance role name
+      NodeInstanceRoleArn:
+        default: Node instance role ARN
+      KubernetesVersion:
+        default: Kubernetes version
+      CustomAmiId:
+        default: Custom AMI id
+      HttpProxy:
+        default: HTTP proxy
+      KubeManifestLambdaArn:
+        default: Kubernetes manifest Lambda ARN
+      TargetGroupARNs:
+        default: Target Group ARN's
   AWSAMIRegionMap:
     Filters:
       AMZNEKS115:
@@ -108,6 +141,18 @@ Metadata:
       SLES15EKS113GPU:
         name: 'suse-sles-15-v20??????-hvm-ssd-x86_64'
         owner-id: '013907871322'
+  LintSpellExclude:
+    - Managed Node Group
+    - files/bootstrap.sh
+    - https://github.com/awslabs/amazon-eks-ami
+    - autoscaler
+    - Lambda
+    - Security Group
+    - Target Group
+    - Kubernetes
+    - Instance Profile
+    - Role
+    - Enabled
 Parameters:
   KeyPairName:
     Description: Name of an existing EC2 key pair. All instances will launch with
@@ -122,16 +167,16 @@ Parameters:
       instances.
     Type: String
   PrivateSubnet1ID:
-    Description: ID of private subnet 1 in Availability Zone 1 for the Workload (e.g.,
-      subnet-a0246dcd)
+    Description: ID of private subnet 1 in Availability Zone 1 for the workload (e.g.,
+      subnet-a0246123)
     Type: AWS::EC2::Subnet::Id
   PrivateSubnet2ID:
-    Description: ID of private subnet 2 in Availability Zone 2 for the Workload (e.g.,
+    Description: ID of private subnet 2 in Availability Zone 2 for the workload (e.g.,
       subnet-b1f432cd)
     Type: String
     Default: ""
   PrivateSubnet3ID:
-    Description: ID of private subnet 3 in Availability Zone 3 for the Workload (e.g.,
+    Description: ID of private subnet 3 in Availability Zone 3 for the workload (e.g.,
       subnet-b1f4a2cd)
     Type: String
     Default: ""
@@ -226,7 +271,7 @@ Parameters:
       - z1d.6xlarge
       - z1d.12xlarge
     ConstraintDescription: Must be a valid EC2 instance type
-    Description: Type of EC2 instance for the Node instances
+    Description: Type of EC2 instance for the node instances
     Type: String
   NumberOfNodes:
     Default: 3
@@ -247,10 +292,12 @@ Parameters:
   ManagedNodeGroup:
     AllowedValues: [ "yes", "no" ]
     Default: "no"
-    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes Version 1.14 or higher.
+    Description: Choose if you want to use a managed node group. If you select "yes", you must select Kubernetes version 1.14 or higher.
     Type: String
   ManagedNodeGroupAMIType:
-    Description: Select one of the two AMI Types for your Managed Node Group (Only applies if you selected Managed Node Group "yes". ). GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support. Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
+    Description: Select one of the two AMI types for your Managed Node Group (only applies if you selected Managed Node Group "yes". ).
+      GPU instance types should use the AL2_x86_64_GPU AMI type, which uses the Amazon EKS-optimized Linux AMI with GPU support.
+      Non-GPU instances should use the AL2_x86_64 AMI type, which uses the Amazon EKS-optimized Linux AMI.
     AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU"]
     Default: "AL2_x86_64"
     Type: String
@@ -258,24 +305,30 @@ Parameters:
     Description: Name of the EKS cluster to join
     Type: String
   BootstrapArguments:
-    Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami
+    Description: Arguments to pass to the bootstrap script. See files/bootstrap.sh in https://github.com/awslabs/amazon-eks-ami.
     Type: String
     Default: ""
   ControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup::Id
+    Description: EKS control plane EC2 Security Group
   NodeInstanceProfile:
     Type: String
+    Description: ARN for IAM Instance Profile to attach to nodes
   NodeInstanceRoleName:
     Type: String
+    Description: IAM Role name to attach to nodes
   NodeInstanceRoleArn:
     Type: String
+    Description: IAM Role ARN to attach to nodes
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.15", "1.14", "1.13" ]
     Default: "1.15"
+    Description: The Kubernetes control plane version.
   TargetGroupARNs:
     Type: CommaDelimitedList
     Default: ""
+    Description: "[OPTIONAL] List of Target Group ARN's to use with Managed Node Groups"
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
     ConstraintDescription: Quick Start bucket name can include numbers, lowercase
@@ -303,12 +356,15 @@ Parameters:
   CustomAmiId:
     Type: String
     Default: ""
+    Description: "[OPTIONAL] If an AMI id is specified here it will be used in stead of the ami determined from the OS/region."
   HttpProxy:
     Type: String
     Default: ""
+    Description: "[OPTIONAL] Specify the host name for an HTTP proxy to use for outbound internet access."
   KubeManifestLambdaArn:
     Type: String
     Default: ""
+    Description: "ARN for lambda function used by the KubeManifest custom resource."
   ProvisionClusterAutoScaler:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
@@ -1003,4 +1059,7 @@ Outputs:
   EKSNodeSecurityGroup:
     Value: !Ref NodeSecurityGroup
   NodeAutoScalingGroup:
-    Value: !If [ DisableManagedNodeGroup, !Ref 'NodeGroup', !Ref 'EKSNodegroup' ]
+    Value: !If
+      - DisableManagedNodeGroup
+      - !Ref 'NodeGroup'
+      - !If [ EnableManagedNodeGroup, !Ref 'EKSNodegroup', "" ]
