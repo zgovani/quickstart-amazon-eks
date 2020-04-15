@@ -9,6 +9,7 @@ RUN mkdir -p bin/ && \
     curl -o bin/aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/${VERSION}/bin/linux/amd64/aws-iam-authenticator && \
     chmod +x bin/kubectl && \
     chmod +x bin/aws-iam-authenticator && \
-    rm -rf linux-amd64 Dockerfile
+    rm -rf linux-amd64 Dockerfile && \
+    zip -X -r lambda.zip ./
 
-CMD zip -FS -r /output/lambda.zip ./
+CMD mv lambda.zip /output/

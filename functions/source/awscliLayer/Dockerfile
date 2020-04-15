@@ -7,6 +7,7 @@ RUN mkdir -p python/ && \
     rm -rf python/*.dist-info python/*.pth python/__pycache__ python/bin/__pycache__ && \
     mv python/bin ./ && \
     mv python/* ./bin/ && \
-    rm Dockerfile requirements.txt
+    rm Dockerfile requirements.txt && \
+    zip -X -r lambda.zip ./
 
-CMD zip -FS -r /output/lambda.zip ./
+CMD mv lambda.zip /output/

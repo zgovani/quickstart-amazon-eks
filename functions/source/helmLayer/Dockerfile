@@ -9,7 +9,7 @@ RUN curl -L https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz |tar xvz && 
     mv linux-amd64/tiller bin/tiller && \
     chmod +x bin/helm-client && \
     chmod +x bin/tiller && \
-    rm -rf linux-amd64 Dockerfile
+    rm -rf linux-amd64 Dockerfile && \
+    zip -X -r lambda.zip ./
 
-CMD zip -FS -r /output/lambda.zip ./
-
+CMD mv lambda.zip /output/

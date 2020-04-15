@@ -4,6 +4,7 @@ COPY . .
 
 RUN pip install -t . -r ./requirements.txt && \
     rm -rf *.dist-info *.pth && \
-    rm Dockerfile requirements.txt
+    rm Dockerfile requirements.txt && \
+    zip -X -r lambda.zip ./
 
-CMD zip -FS -r /output/lambda.zip ./
+CMD mv lambda.zip /output/
