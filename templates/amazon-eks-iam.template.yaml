@@ -40,7 +40,6 @@ Parameters:
 Conditions:
   CreateDeleteBucketContentsRole: !Equals [!Ref 'DeleteLambdaZipsBucketContents', "True"]
   EnableBastionRole: !Equals [!Ref CreateBastionRole, "Enabled"]
-  CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   CreateVpcRoleRole:
