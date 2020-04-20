@@ -61,6 +61,7 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       MonitoringStack: Prometheus + Grafana
+      ProvisionBastionHost: Enabled
     regions:
     - ap-southeast-2
   2az:
