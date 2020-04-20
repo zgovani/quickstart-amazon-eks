@@ -298,9 +298,8 @@ Resources:
       Parameters:
         BastionHostName: EKSBastion
         BastionBanner: !Sub
-          - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/bastion_banner_message.txt'
-          - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
-            S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+          - 's3://${S3Bucket}/${QSS3KeyPrefix}scripts/bastion_banner_message.txt'
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         EnableBanner: true
         BastionTenancy: default
         NumBastionHosts: "1"
