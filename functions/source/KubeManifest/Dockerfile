@@ -7,4 +7,4 @@ RUN pip install -t . -r ./requirements.txt && \
     rm Dockerfile requirements.txt && \
     zip -X -r lambda.zip ./
 
-CMD mv lambda.zip /output/
+CMD mkdir -p /output/ && mv lambda.zip /output/

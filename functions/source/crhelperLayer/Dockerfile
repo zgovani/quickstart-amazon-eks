@@ -8,4 +8,4 @@ RUN mkdir -p python/ && \
     rm Dockerfile requirements.txt && \
     zip -X -r lambda.zip ./
 
-CMD mv lambda.zip /output/
+CMD mkdir -p /output/ && mv lambda.zip /output/

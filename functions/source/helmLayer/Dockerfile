@@ -12,4 +12,4 @@ RUN curl -L https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz |tar xvz && 
     rm -rf linux-amd64 Dockerfile && \
     zip -X -r lambda.zip ./
 
-CMD mv lambda.zip /output/
+CMD mkdir -p /output/ && mv lambda.zip /output/

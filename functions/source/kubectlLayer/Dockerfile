@@ -12,4 +12,4 @@ RUN mkdir -p bin/ && \
     rm -rf linux-amd64 Dockerfile && \
     zip -X -r lambda.zip ./
 
-CMD mv lambda.zip /output/
+CMD mkdir -p /output/ && mv lambda.zip /output/
