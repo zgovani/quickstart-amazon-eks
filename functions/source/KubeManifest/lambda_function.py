@@ -227,32 +227,13 @@ def handler_init(event):
         logger.debug("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
     elif 'Url' in event['ResourceProperties'].keys():
         manifest_file = '/tmp/manifest.json'
-        try:
-            if 'format' in event['ResourceProperties']['Url'].keys():
-                format = event['ResourceProperties']['Url']['format']
-            else:
-                format = 'yaml'
-
-            if 'source' in event["Url"].keys():
-                url = event["Url"]['source']
-
-                if re.match(s3_scheme, url):
-                    response = s3_get(url)
-                else:
-                    response = http_get(url)
-
-                if format == 'yaml':
-                    manifest = yaml.safe_load(response)
-                elif format == 'json':
-                    manifest = json.loads(response)
-                else:
-                    raise Exception("Unknown format of manifest")
-                write_manifest(manifest, manifest_file)
-            else:
-                raise Exception("URL source was not specified")
-        except Exception as e:
-            raise RuntimeError(f"Failed with the following error: {e}")
-
+        url = event['ResourceProperties']["Url"]
+        if re.match(s3_scheme, url):
+            response = s3_get(url)
+        else:
+            response = http_get(url)
+        manifest = yaml.safe_load(response)
+        write_manifest(manifest, manifest_file)
     return physical_resource_id, manifest_file
 
 

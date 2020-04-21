@@ -23,9 +23,7 @@ Resources:
       ServiceToken: !Ref KubeManifestLambdaArn
       ClusterName: !Ref KubeClusterName
       # Kubernetes manifest URL
-      Url:
-        source: https://k8s.io/examples/controllers/nginx-deployment.yaml
-        format: yaml
+      Url: https://k8s.io/examples/controllers/nginx-deployment.yaml
   # This resource creates a ConfigMap in the target cluster. It retrieves and decrypts a kms encrypted
   # kubernetes config file, which is automatically created when customers deploy an EKS cluster with the quickstart,
   # for bring-your-own-cluster the customer must encrypt and upload a config file prior to launching the stack.
