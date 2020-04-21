@@ -4,6 +4,7 @@ import boto3
 import subprocess
 import shlex
 import re
+import requests
 from ruamel import yaml
 from datetime import date, datetime
 from crhelper import CfnResource
@@ -204,6 +205,35 @@ def handler_init(event):
             manifest = fix_types(generate_name(event, physical_resource_id))
         write_manifest(manifest, manifest_file)
         logger.debug("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
+    elif 'Url' in event['ResourceProperties'].keys():
+        manifest_file = '/tmp/manifest.json'
+        try:
+            if 'timeout' in event['ResourceProperties']['Url'].keys():
+                timeout = event['ResourceProperties']['Url']['timeout']
+            else:
+                timeout = 60
+
+            if 'format' in event['ResourceProperties']['Url'].keys():
+                format = event['ResourceProperties']['Url']['format']
+            else:
+                format = 'yaml'
+
+            response = requests.get(event["Url"]['source'], timeout=timeout).text
+
+            if format == 'yaml':
+                manifest = yaml.safe_load(response)
+            elif format == 'json':
+                manifest = json.loads(response)
+            else:
+                raise Exception("Unknown format of manifest")
+
+            write_manifest(manifest, manifest_file)
+        except requests.exceptions.RequestException as e:
+            raise RuntimeError(f"Failed to fetch manifest by url {url}: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Failed with the following error: {e}")
+
+
     return physical_resource_id, manifest_file
 
 
