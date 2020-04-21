@@ -17,9 +17,29 @@ try:
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
     ec2_client = boto3.client('ec2')
+    s3_scheme = re.compile(r'^s3://.+/.+')
 except Exception as init_exception:
     helper.init_failure(init_exception)
 
+def s3_get(url):
+    try:
+        return str(s3_client.get_object(
+            Bucket=url.split('/')[2], Key="/".join(url.split('/')[3:])
+        )['Body'].read())
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch CustomValueYaml {url} from S3. {e}")
+
+def http_get(url):
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Failed to fetch CustomValueYaml url {url}: {e}")
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to fetch CustomValueYaml url {url}: [{response.status_code}] "
+            f"{response.reason}"
+        )
+    return response.text
 
 def run_command(command):
     retries = 0
@@ -208,31 +228,30 @@ def handler_init(event):
     elif 'Url' in event['ResourceProperties'].keys():
         manifest_file = '/tmp/manifest.json'
         try:
-            if 'timeout' in event['ResourceProperties']['Url'].keys():
-                timeout = event['ResourceProperties']['Url']['timeout']
-            else:
-                timeout = 60
-
             if 'format' in event['ResourceProperties']['Url'].keys():
                 format = event['ResourceProperties']['Url']['format']
             else:
                 format = 'yaml'
 
-            response = requests.get(event["Url"]['source'], timeout=timeout).text
+            if 'source' in event["Url"].keys():
+                url = event["Url"]['source']
 
-            if format == 'yaml':
-                manifest = yaml.safe_load(response)
-            elif format == 'json':
-                manifest = json.loads(response)
+                if re.match(s3_scheme, url):
+                    response = s3_get(url)
+                else:
+                    response = http_get(url)
+
+                if format == 'yaml':
+                    manifest = yaml.safe_load(response)
+                elif format == 'json':
+                    manifest = json.loads(response)
+                else:
+                    raise Exception("Unknown format of manifest")
+                write_manifest(manifest, manifest_file)
             else:
-                raise Exception("Unknown format of manifest")
-
-            write_manifest(manifest, manifest_file)
-        except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"Failed to fetch manifest by url {url}: {e}")
+                raise Exception("URL source was not specified")
         except Exception as e:
             raise RuntimeError(f"Failed with the following error: {e}")
-
 
     return physical_resource_id, manifest_file
 
