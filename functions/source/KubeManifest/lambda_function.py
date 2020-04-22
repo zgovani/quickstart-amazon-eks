@@ -4,6 +4,7 @@ import boto3
 import subprocess
 import shlex
 import re
+import requests
 from ruamel import yaml
 from datetime import date, datetime
 from crhelper import CfnResource
@@ -16,9 +17,29 @@ try:
     s3_client = boto3.client('s3')
     kms_client = boto3.client('kms')
     ec2_client = boto3.client('ec2')
+    s3_scheme = re.compile(r'^s3://.+/.+')
 except Exception as init_exception:
     helper.init_failure(init_exception)
 
+def s3_get(url):
+    try:
+        return str(s3_client.get_object(
+            Bucket=url.split('/')[2], Key="/".join(url.split('/')[3:])
+        )['Body'].read())
+    except Exception as e:
+        raise RuntimeError(f"Failed to fetch CustomValueYaml {url} from S3. {e}")
+
+def http_get(url):
+    try:
+        response = requests.get(url)
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"Failed to fetch CustomValueYaml url {url}: {e}")
+    if response.status_code != 200:
+        raise RuntimeError(
+            f"Failed to fetch CustomValueYaml url {url}: [{response.status_code}] "
+            f"{response.reason}"
+        )
+    return response.text
 
 def run_command(command):
     retries = 0
@@ -204,6 +225,15 @@ def handler_init(event):
             manifest = fix_types(generate_name(event, physical_resource_id))
         write_manifest(manifest, manifest_file)
         logger.debug("Applying manifest: %s" % json.dumps(manifest, default=json_serial))
+    elif 'Url' in event['ResourceProperties'].keys():
+        manifest_file = '/tmp/manifest.json'
+        url = event['ResourceProperties']["Url"]
+        if re.match(s3_scheme, url):
+            response = s3_get(url)
+        else:
+            response = http_get(url)
+        manifest = yaml.safe_load(response)
+        write_manifest(manifest, manifest_file)
     return physical_resource_id, manifest_file
 
 

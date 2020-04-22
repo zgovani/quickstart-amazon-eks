@@ -14,6 +14,20 @@ Resources:
   # kubernetes config file, which is automatically created when customers deploy an EKS cluster with the quickstart,
   # for bring-your-own-cluster the customer must encrypt and upload a config file prior to launching the stack.
   #
+  # The "URL" property is an exact representation of a regular kubernetes resource manifest, available by link
+  KubeManifestURLExample:
+    Type: "Custom::KubeManifest"
+    Version: '1.0'
+    Properties:
+      # The lambda function that executes the manifest against the cluster. This is created in one of the parent stacks
+      ServiceToken: !Ref KubeManifestLambdaArn
+      ClusterName: !Ref KubeClusterName
+      # Kubernetes manifest URL
+      Url: https://k8s.io/examples/controllers/nginx-deployment.yaml
+  # This resource creates a ConfigMap in the target cluster. It retrieves and decrypts a kms encrypted
+  # kubernetes config file, which is automatically created when customers deploy an EKS cluster with the quickstart,
+  # for bring-your-own-cluster the customer must encrypt and upload a config file prior to launching the stack.
+  #
   # The "Manifest" property is an exact representation of a regular kubernetes resource manifest, on stack create
   # `kubectl create --save-config` is called, on stack update `kubectl apply` and on stack delete `kubectl delete`
   #
