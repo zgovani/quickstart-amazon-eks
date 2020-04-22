@@ -13,7 +13,7 @@ ASSUME_ROLE_POLICY_DOCUMENT = """{
     {
       "Effect": "Allow",
       "Principal": {
-        "Service": "lambda.%s"
+        "Service": "lambda.amazonaws.com"
       },
       "Action": "sts:AssumeRole"
     }
@@ -32,7 +32,7 @@ def create_role(event, _c):
     try:
         iam.create_role(
             RoleName=ROLE_NAME,
-            AssumeRolePolicyDocument=ASSUME_ROLE_POLICY_DOCUMENT % event['ResourceProperties']['Suffix']
+            AssumeRolePolicyDocument=ASSUME_ROLE_POLICY_DOCUMENT
         )
     except iam.exceptions.EntityAlreadyExistsException:
         print("Role already exists")
