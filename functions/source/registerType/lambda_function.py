@@ -9,14 +9,14 @@ helper = CfnResource(json_logging=True, log_level='DEBUG')
 cfn = boto3.client('cloudformation')
 
 
-def stabilize(token, cfn):
+def stabilize(token):
     p = cfn.describe_type_registration(RegistrationToken=token)
     while p['ProgressStatus'] == "IN_PROGRESS":
         sleep(5)
         p = cfn.describe_type_registration(RegistrationToken=token)
     if p['ProgressStatus'] == 'FAILED':
         if 'to finish before submitting another deployment request for ' not in p['Description']:
-            raise Exception(f"Failed to register resource {p}")
+            raise Exception(p['Description'])
         return None
     return p['TypeVersionArn']
 
@@ -36,7 +36,7 @@ def register(event, _):
         "ExecutionRoleArn": event['ResourceProperties']['ExecutionRoleArn']
     }
     response = cfn.register_type(**kwargs)
-    version_arn = stabilize(response['RegistrationToken'], cfn)
+    version_arn = stabilize(response['RegistrationToken'])
     if version_arn:
         cfn.set_type_default_version(Arn=version_arn)
     return version_arn
