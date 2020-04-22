@@ -95,7 +95,7 @@ Resources:
           - Sid: Allow CloudFormation to copy artifacts from the bucket
             Effect: Allow
             Principal:
-              Service: !Sub "cloudformation.${AWS::URLSuffix}"
+              Service: "cloudformation.amazonaws.com"
             Action:
               - s3:ListBucket
               - s3:GetObject
@@ -163,7 +163,6 @@ Resources:
     Type: Custom::CreateVpcRole
     Properties:
       ServiceToken: !GetAtt CreateVpcRoleLambda.Arn
-      Suffix: !Ref "AWS::URLSuffix"
       Partition: !Ref "AWS::Partition"
   RegisterTypeFunction:
     DependsOn: CopyZips
@@ -324,7 +323,10 @@ Resources:
           def delete_objects(bucket, prefix, objects):
               s3 = boto3.client('s3')
               objects = {'Objects': [{'Key': prefix + o} for o in objects]}
-              s3.delete_objects(Bucket=bucket, Delete=objects)
+              try:
+                  s3.delete_objects(Bucket=bucket, Delete=objects)
+              except s3.exceptions.NoSuchBucket:
+                  pass
           def handler(event, context):
               logger.debug(event)
               status = cfnresponse.SUCCESS
