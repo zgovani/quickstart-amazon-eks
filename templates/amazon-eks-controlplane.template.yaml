@@ -62,7 +62,7 @@ Conditions:
     - !Equals [ !Ref EKSEncryptSecretsKmsKeyArn, "" ]
     - !Equals [ !Ref EKSEncryptSecrets, Enabled ]
   EnableEncryption: !Equals [ !Ref EKSEncryptSecrets, Enabled ]
-  LoggingEnabled: !Not [ !Equals [ !Ref EKSClusterLoggingTypes, ""] ]
+  LoggingEnabled: !Not [ !Equals [ !Select [ 0, !Ref EKSClusterLoggingTypes ], "" ] ]
 Resources:
   KMSKey:
     Condition: CreateKey
