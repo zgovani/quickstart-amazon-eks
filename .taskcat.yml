@@ -73,3 +73,10 @@ tests:
     - ca-central-1
     - cn-northwest-1
     - cn-north-1
+  no-logging:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_2]
+      NumberOfAZs: "2"
+      EKSClusterLoggingTypes: ""
+    regions:
+      - eu-west-1
