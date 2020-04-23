@@ -62,6 +62,7 @@ Conditions:
     - !Equals [ !Ref EKSEncryptSecretsKmsKeyArn, "" ]
     - !Equals [ !Ref EKSEncryptSecrets, Enabled ]
   EnableEncryption: !Equals [ !Ref EKSEncryptSecrets, Enabled ]
+  LoggingEnabled: !Not [ !Equals [ !Ref EKSClusterLoggingTypes, ""] ]
 Resources:
   KMSKey:
     Condition: CreateKey
@@ -91,7 +92,7 @@ Resources:
         PublicAccessCidrs: !Ref EKSPublicAccessCIDRs
         EndpointPrivateAccess: !If [ EnablePrivateEndpoint, true, false ]
         EndpointPublicAccess: !If [ EnablePublicEndpoint, true, false ]
-      EnabledClusterLoggingTypes: !Ref EKSClusterLoggingTypes
+      EnabledClusterLoggingTypes: !If [ LoggingEnabled, !Ref EKSClusterLoggingTypes, !Ref "AWS::NoValue" ]
       EncryptionConfig: !If
         - EnableEncryption
         - - Resources: [ secrets ]
