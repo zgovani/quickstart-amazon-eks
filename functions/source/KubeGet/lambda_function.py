@@ -38,8 +38,6 @@ def create_kubeconfig(cluster_name):
 @helper.update
 def create_handler(event, _):
     print('Received event: %s' % json.dumps(event))
-    if not event['ResourceProperties']['KubeConfigPath'].startswith("s3://"):
-        raise Exception("KubeConfigPath must be a valid s3 URI (eg.: s3://my-bucket/my-key.txt")
     create_kubeconfig(event['ResourceProperties']['ClusterName'])
     name = event['ResourceProperties']['Name']
     retry_timeout = 0
