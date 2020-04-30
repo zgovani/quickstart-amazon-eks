@@ -3,8 +3,6 @@ Description: "deploy an example workload into an existing kubernetes cluster"
 Parameters:
   KubeManifestLambdaArn:
     Type: String
-  HelmLambdaArn:
-    Type: String
   KubeClusterName:
     Type: String
   NodeInstanceProfile:
@@ -63,11 +61,9 @@ Resources:
   # are the resource type + an index for the case where a chart creates more than 1 of a Kind (eg. ConfigMap0 fetches
   # the 1st ConfigMap created)
   HelmExample:
-    Type: "Custom::Helm"
-    Version: '1.0'
+    Type: "AWSQS::Kubernetes::Helm"
     Properties:
-      ServiceToken: !Ref HelmLambdaArn
-      ClusterName: !Ref KubeClusterName
+      ClusterID: !Ref KubeClusterName
       # If the chart is not in the stable repo then supply a repo url
       RepoUrl: https://svc-catalog-charts.storage.googleapis.com
       # namespace is optional, in most cases it's best to leave this out so that a namespace is dynamically generated.

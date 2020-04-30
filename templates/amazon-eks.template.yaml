@@ -418,7 +418,6 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
         NodeAutoScalingGroup: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
         EksClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
@@ -432,7 +431,6 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
         NodeGroupSecurityGroup: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
@@ -506,7 +504,6 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
   GrafanaStack:
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
@@ -517,10 +514,7 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
 Outputs:
-  HelmLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
   KubeGetLambdaArn:
