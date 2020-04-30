@@ -44,6 +44,7 @@ Metadata:
           - QSS3BucketRegion
           - CleanupSecurityGroupDependenciesLambdaArn
           - KubeManifestLambdaArn
+          - NodeSGFunctionArn
     ParameterLabels:
       QSS3BucketRegion:
         default: Quick Start S3 bucket region
@@ -103,6 +104,8 @@ Metadata:
         default: Kubernetes manifest Lambda ARN
       TargetGroupARNs:
         default: Target Group ARN's
+      NodeSGFunctionArn:
+        default: Node security group Lambda ARN
   AWSAMIRegionMap:
     Filters:
       AMZNEKS115:
@@ -334,6 +337,9 @@ Parameters:
     Type: String
     Default: ""
     Description: "ARN for lambda function used by the KubeManifest custom resource."
+  NodeSGFunctionArn:
+    Type: String
+    Description: Function ARN to fetch node Security Group for managed node groups
   ProvisionClusterAutoScaler:
     Type: String
     AllowedValues: [ Enabled, Disabled ]
@@ -703,8 +709,13 @@ Resources:
     Type: Custom::Cleanup
     Properties:
       ServiceToken: !Ref CleanupSecurityGroupDependenciesLambdaArn
-      SecurityGroups: [!Ref NodeSecurityGroup]
+      SecurityGroups:
+        - !If
+          - DisableManagedNodeGroup
+          - !Ref NodeSecurityGroup
+          - !Ref 'AWS::NoValue'
   NodeSecurityGroup:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security group for all nodes in the node group
@@ -713,6 +724,7 @@ Resources:
         - Key: !Sub "kubernetes.io/cluster/${EKSControlPlane}"
           Value: 'owned'
   NodeSecurityGroupIngress:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow nodes to communicate with each other
@@ -722,6 +734,7 @@ Resources:
       FromPort: 0
       ToPort: 65535
   NodeSecurityGroupFromControlPlaneIngress:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
@@ -731,6 +744,7 @@ Resources:
       FromPort: 1025
       ToPort: 65535
   ControlPlaneEgressToNodeSecurityGroup:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: Allow the cluster control plane to communicate with worker Kubelet and pods
@@ -740,6 +754,7 @@ Resources:
       FromPort: 1025
       ToPort: 65535
   NodeSecurityGroupFromControlPlaneOn443Ingress:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
@@ -749,6 +764,7 @@ Resources:
       FromPort: 443
       ToPort: 443
   ControlPlaneEgressToNodeSecurityGroupOn443:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
@@ -758,6 +774,7 @@ Resources:
       FromPort: 443
       ToPort: 443
   ClusterControlPlaneSecurityGroupIngress:
+    Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow pods to communicate with the cluster API Server
@@ -766,6 +783,13 @@ Resources:
       IpProtocol: tcp
       ToPort: 443
       FromPort: 443
+  NodeSG:
+    Condition: EnableManagedNodeGroup
+    Type: Custom::NodeSG
+    Properties:
+      ServiceToken: !Ref NodeSGFunctionArn
+      ClusterName: !Ref EKSControlPlane
+      NodeGroupName: !GetAtt EKSNodegroup.NodegroupName
   NodeGroup:
     Metadata:
       DependsOn: !If [ CleanupSGs, !Ref CleanupSecurityGroupDependencies, !Ref "AWS::NoValue" ]
@@ -817,6 +841,7 @@ Resources:
       HttpProxy: !Ref HttpProxy
       VpcId: !Ref VPCID
   NodeLaunchConfig:
+    Condition: DisableManagedNodeGroup
     Type: AWS::AutoScaling::LaunchConfiguration
     Metadata:
       AWS::CloudFormation::Authentication:
@@ -1044,9 +1069,14 @@ Resources:
         - 2AZDeployment
         - [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]
         - [ !Ref PrivateSubnet1ID ]
+      RemoteAccess:
+        Ec2SshKey: !Ref KeyPairName
 Outputs:
   EKSNodeSecurityGroup:
-    Value: !Ref NodeSecurityGroup
+    Value: !If
+      - DisableManagedNodeGroup
+      - !Ref NodeSecurityGroup
+      - !If [ EnableManagedNodeGroup, !Ref NodeSG, "" ]
   NodeAutoScalingGroup:
     Value: !If
       - DisableManagedNodeGroup

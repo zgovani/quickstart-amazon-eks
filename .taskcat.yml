@@ -47,6 +47,9 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       EfsStorageClass: Enabled
+      ClusterAutoScaler: Disabled
+      ManagedNodeGroup: 'yes'
+      ManagedNodeGroupAMIType: AL2_x86_64
     regions:
     - us-west-2
   managed-node-group:

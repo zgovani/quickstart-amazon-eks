@@ -337,6 +337,7 @@ Resources:
         QSS3BucketRegion: !Ref QSS3BucketRegion
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
+        NodeSGFunctionArn: !GetAtt FunctionStack.Outputs.NodeSGFunctionArn
   BastionSShToNodes:
     Condition: EnableBastion
     Type: "AWS::EC2::SecurityGroupIngress"
@@ -395,6 +396,7 @@ Resources:
         RegisterTypeRoleArn: !GetAtt IamStack.Outputs.RegisterTypeRoleArn
         ExecutionRoleArn: !GetAtt IamStack.Outputs.ExecutionRoleArn
         LogRoleArn: !GetAtt IamStack.Outputs.LogDeliveryRoleArn
+        NodeSGRoleArn: !GetAtt IamStack.Outputs.NodeSGRoleArn
         EKSSubnetIds: !If
           - 3AZDeployment
           - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]]
