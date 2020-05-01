@@ -734,6 +734,16 @@ Resources:
       IpProtocol: '-1'
       FromPort: 0
       ToPort: 65535
+  ManagedNodeSecurityGroupIngress:
+    Condition: EnableManagedNodeGroup
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow nodes to communicate with each other
+      GroupId: !Ref NodeSG
+      SourceSecurityGroupId: !Ref NodeSG
+      IpProtocol: '-1'
+      FromPort: 0
+      ToPort: 65535
   NodeSecurityGroupFromControlPlaneIngress:
     Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
