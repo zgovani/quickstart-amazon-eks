@@ -365,8 +365,9 @@ Conditions:
     - !Ref NumberOfNodes
     - 1
   UseCustomAmi: !Not [ !Equals [ !Ref CustomAmiId, "" ] ]
-  CleanupSGs:
-    !Not [ !Equals [ !Ref CleanupSecurityGroupDependenciesLambdaArn, "" ] ]
+  CleanupSGs: !Or
+    - !Not [ !Equals [ !Ref CleanupSecurityGroupDependenciesLambdaArn, "" ] ]
+    - !Equals [ !Ref 'ManagedNodeGroup', 'no' ]
   AutoScalerDisabled: !Equals [ !Ref 'ProvisionClusterAutoScaler', 'Disabled' ]
   DisableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup' , 'no' ]
   EnableManagedNodeGroup: !And
