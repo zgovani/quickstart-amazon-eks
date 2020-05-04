@@ -39,6 +39,7 @@ Metadata:
           - NodeVolumeSize
           - ManagedNodeGroup
           - ManagedNodeGroupAMIType
+          - MangedNodeGroupLabel
           - AdditionalEKSAdminUserArn
           - AdditionalEKSAdminRoleArn
           - KubernetesVersion
@@ -80,6 +81,8 @@ Metadata:
         default: Managed Node Group
       ManagedNodeGroupAMIType:
         default: Managed Node Group AMI Type
+      MangedNodeGroupLabel:
+        default: Managed Node Group Label
       PublicSubnet1ID:
         default: Public subnet 1 ID
       PublicSubnet2ID:
@@ -267,6 +270,10 @@ Parameters:
     AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU", ""]
     Default: "AL2_x86_64"
     Type: String
+  MangedNodeGroupLabel:
+    Description: Add a custom name label to the Managed Node Group Nodes. If you dont do this then a default one will be added for you.
+    Type: String
+    Default: ''
   KubernetesVersion:
     Type: String
     AllowedValues: [ "1.15", "1.14", "1.13" ]
@@ -379,6 +386,7 @@ Resources:
         NodeVolumeSize: !Ref NodeVolumeSize
         ManagedNodeGroup: !Ref ManagedNodeGroup
         ManagedNodeGroupAMIType: !Ref ManagedNodeGroupAMIType
+        MangedNodeGroupLabel: !Ref MangedNodeGroupLabel
         LambdaZipsBucketName: !Ref LambdaZipsBucketName
         NodeInstanceType: !Ref NodeInstanceType
         RemoteAccessCIDR: !Ref RemoteAccessCIDR

@@ -273,6 +273,10 @@ Parameters:
     AllowedValues: [ "AL2_x86_64", " AL2_x86_64_GPU"]
     Default: "AL2_x86_64"
     Type: String
+  MangedNodeGroupLabel:
+    Description: Add a custom name label to the Managed Node Group Nodes. If you dont do this then a default one will be added for you.
+    Type: String
+    Default: ''
   EKSControlPlane:
     Description: Name of the EKS cluster to join
     Type: String
@@ -378,6 +382,7 @@ Conditions:
     - !Or
       - !Equals [ !Ref 'KubernetesVersion', '1.14' ]
       - !Equals [ !Ref 'KubernetesVersion', '1.13' ]
+  MNGLBL: !Equals [ !Ref 'MangedNodeGroupLabel', '' ]
 Mappings:
   K8sVersionMap:
     "1.13":
@@ -737,6 +742,8 @@ Resources:
   ManagedNodeSecurityGroupIngress:
     Condition: EnableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
+    Metadata:
+      cfn-lint: { config: { ignore_checks: [E3008] } }
     Properties:
       Description: Allow nodes to communicate with each other
       GroupId: !Ref NodeSG
@@ -1071,7 +1078,7 @@ Resources:
         MaxSize: !If [ MaxNodes, !Ref MaxNumberOfNodes, !Ref NumberOfNodes ]
       Labels:
         Key: Name
-        Value: !Sub "${EKSControlPlane}-${NodeGroupName}-Node"
+        Value: !If [ MNGLBL, !Sub '${EKSControlPlane}-${NodeGroupName}-Node', !Ref MangedNodeGroupLabel ]
         PropagateAtLaunch: true
       Subnets: !If
       - 3AZDeployment
