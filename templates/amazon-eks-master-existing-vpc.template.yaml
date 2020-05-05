@@ -30,6 +30,7 @@ Metadata:
         Parameters:
           - KeyPairName
           - ProvisionBastionHost
+          - BastionHostHelmVersion
       - Label:
           default: Amazon EKS configuration
         Parameters:
@@ -78,11 +79,11 @@ Metadata:
       NodeVolumeSize:
         default: Node volume size
       ManagedNodeGroup:
-        default: Managed Node Group
+        default: Managed node group
       ManagedNodeGroupAMIType:
-        default: Managed Node Group AMI Type
+        default: Managed node group AMI type
       MangedNodeGroupLabel:
-        default: Managed Node Group Label
+        default: Managed node group label
       PublicSubnet1ID:
         default: Public subnet 1 ID
       PublicSubnet2ID:
@@ -98,9 +99,9 @@ Metadata:
       VPCID:
         default: VPC ID
       AdditionalEKSAdminUserArn:
-        default: Additional EKS admin ARN (IAM User)
+        default: Additional EKS admin ARN (IAM user)
       AdditionalEKSAdminRoleArn:
-        default: Additional EKS admin ARN (IAM Role)
+        default: Additional EKS admin ARN (IAM role)
       KubernetesVersion:
         default: Kubernetes version
       LambdaZipsBucketName:
@@ -116,7 +117,9 @@ Metadata:
       EfsProvisionedThroughputInMibps:
         default: EFS provisioned throughput in Mibps
       ProvisionBastionHost:
-        default: Provision Bastion Host
+        default: Provision bastion host
+      BastionHostHelmVersion:
+        default: Helm version to deploy on bastion host
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -343,6 +346,11 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
     Description: "Skip creating a bastion host by setting this is set to Disabled."
+  BastionHostHelmVersion:
+    Type: String
+    AllowedValues: [ "Helm2", "Helm3" ]
+    Default: "Helm3"
+    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 3 is the current default."
 Rules:
   EKSVersion_ManagedNodeGrou:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -400,6 +408,7 @@ Resources:
         EfsThroughputMode: !Ref EfsThroughputMode
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionBastionHost: !Ref ProvisionBastionHost
+        BastionHostHelmVersion: !Ref 'BastionHostHelmVersion'
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
         EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint

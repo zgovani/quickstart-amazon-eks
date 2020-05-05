@@ -417,8 +417,8 @@ Parameters:
   BastionHostHelmVersion:
     Type: String
     AllowedValues: [ "Helm2", "Helm3" ]
-    Default: "Helm2"
-    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 2 is the current Default."
+    Default: "Helm3"
+    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 3 is the current default."
 Rules:
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -517,7 +517,7 @@ Resources:
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionMonitoringStack: !Ref MonitoringStack
         ProvisionBastionHost: !Ref ProvisionBastionHost
-        BastionHostHelmVersion: !If [BastionHostEnabled, !Ref 'BastionHostHelmVersion', '' ]
+        BastionHostHelmVersion: !Ref 'BastionHostHelmVersion'
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
         EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint

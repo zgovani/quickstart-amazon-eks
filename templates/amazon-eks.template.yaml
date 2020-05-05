@@ -185,7 +185,7 @@ Parameters:
   BastionHostHelmVersion:
     Type: String
     AllowedValues: [ "Helm2", "Helm3" ]
-    Default: "Helm2"
+    Default: "Helm3"
     Description: "If Bastion host is enabled, select your desired helm version to install on it. If Bastion is disabled this does not matter. Helm 2 is the current Default."
   BastionBootstrapScript:
     Default: ""
