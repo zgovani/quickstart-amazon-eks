@@ -427,6 +427,46 @@ Resources:
                   - "kms:*"
                   - "lambda:*"
                 Resource: "*"
+  HelmExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      MaxSessionDuration: 8400
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "resources.cloudformation.amazonaws.com"
+            Action: sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: ResourceTypePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "secretsmanager:GetSecretValue"
+                  - "kms:Decrypt"
+                  - "eks:DescribeCluster"
+                  - "s3:GetObject"
+                  - "sts:AssumeRole"
+                  - "iam:PassRole"
+                  - "iam:ListRolePolicies"
+                  - "iam:ListAttachedRolePolicies"
+                  - "iam:GetRole"
+                  - "iam:GetPolicy"
+                  - "iam:GetPolicyVersion"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DeleteNetworkInterface"
+                  - "ec2:Describe*"
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "lambda:*"
+                Resource: "*"
   NodeSGRole:
     Type: AWS::IAM::Role
     Properties:
@@ -475,6 +515,8 @@ Outputs:
     Value: !GetAtt CreateVpcRoleRole.Arn
   ExecutionRoleArn:
     Value: !GetAtt ExecutionRole.Arn
+  HelmExecutionRoleArn:
+    Value: !GetAtt HelmExecutionRole.Arn
   RegisterTypeRoleArn:
     Value: !GetAtt RegisterTypeRole.Arn
   LogDeliveryRoleArn:

@@ -31,6 +31,8 @@ Parameters:
     Default: ""
   FunctionRoleArn:
     Type: String
+  HelmExecutionRoleArn:
+    Type: String
   EKSPublicAccessCIDRs:
     Type: List<String>
     Default: 0.0.0.0/0
@@ -108,6 +110,9 @@ Resources:
             Groups: [ 'system:bootstrappers', 'system:nodes' ]
           - Arn: !Ref FunctionRoleArn
             Username: !Ref FunctionRoleArn
+            Groups: [ 'system:masters' ]
+          - Arn: !Ref HelmExecutionRoleArn
+            Username: !Ref HelmExecutionRoleArn
             Groups: [ 'system:masters' ]
           - !If
             - BastionRole

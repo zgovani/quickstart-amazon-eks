@@ -55,7 +55,9 @@ Parameters:
     Type: String
   NodeSGRoleArn:
     Type: String
-  ExecutionRoleArn:
+  EksClusterResourceExecutionRoleArn:
+    Type: String
+  HelmExecutionRoleArn:
     Type: String
   EKSSubnetIds:
     Type: List<String>
@@ -181,7 +183,7 @@ Resources:
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
       LogRoleArn: !Ref LogRoleArn
       LogGroupName: "awsqs-eks-cluster-logs"
-      ExecutionRoleArn: !Ref ExecutionRoleArn
+      ExecutionRoleArn: !Ref EksClusterResourceExecutionRoleArn
   RegisterHelmType:
     DependsOn: ArtifactCopyPolicy
     Type: Custom::RegisterType
@@ -191,7 +193,7 @@ Resources:
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip"
       LogRoleArn: !Ref LogRoleArn
       LogGroupName: "awsqs-kubernetes-helm-logs"
-      ExecutionRoleArn: !Ref ExecutionRoleArn
+      ExecutionRoleArn: !Ref HelmExecutionRoleArn
   CleanupSecurityGroupDependenciesLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"

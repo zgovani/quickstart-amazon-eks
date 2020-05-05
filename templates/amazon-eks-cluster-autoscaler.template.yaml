@@ -14,10 +14,6 @@ Parameters:
     Type: String
     AllowedValues: [ "1.15", "1.14", "1.13" ]
     Default: "1.15"
-  ClusterSecurityGroupId:
-    Type: String
-  ClusterSubnetIds:
-    Type: List<String>
 # NOTE: The cluster autoscaler version number is dependant on the K8S version it is being
 #       deployed into. See...
 #       https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
@@ -63,9 +59,6 @@ Resources:
       ClusterID: !Ref EksClusterName
       Namespace: kube-system
       Chart: stable/cluster-autoscaler
-      VPCConfiguration:
-        SecurityGroupIds: [ !Ref ClusterSecurityGroupId ]
-        SubnetIds: !Ref ClusterSubnetIds
       Values:
         awsRegion: !Ref 'AWS::Region'
         cloudProvider: aws
