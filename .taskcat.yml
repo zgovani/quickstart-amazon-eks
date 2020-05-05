@@ -18,6 +18,7 @@ project:
     RemoteAccessCIDR: 10.0.0.0/16
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
+    BastionHostHelmVersion: Helm3
   lambda_source_path: functions/source
   lambda_zip_path: functions/packages
 tests:
@@ -53,7 +54,7 @@ tests:
       ManagedNodeGroupAMIType: AL2_x86_64
       ProvisionBastionHost: Disabled
     regions:
-    - us-west-2
+    - eu-north-1
   managed-node-group:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
@@ -75,8 +76,6 @@ tests:
       NumberOfAZs: "2"
     regions:
     - ca-central-1
-    - cn-northwest-1
-    - cn-north-1
   no-logging:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
