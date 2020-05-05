@@ -411,7 +411,8 @@ Resources:
         GetCallerArnRoleArn: !GetAtt IamStack.Outputs.GetCallerArnRoleArn
         CreateVpcRoleRoleArn: !GetAtt IamStack.Outputs.CreateVpcRoleRoleArn
         RegisterTypeRoleArn: !GetAtt IamStack.Outputs.RegisterTypeRoleArn
-        ExecutionRoleArn: !GetAtt IamStack.Outputs.ExecutionRoleArn
+        EksClusterResourceExecutionRoleArn: !GetAtt IamStack.Outputs.ExecutionRoleArn
+        HelmExecutionRoleArn: !GetAtt IamStack.Outputs.HelmExecutionRoleArn
         LogRoleArn: !GetAtt IamStack.Outputs.LogDeliveryRoleArn
         NodeSGRoleArn: !GetAtt IamStack.Outputs.NodeSGRoleArn
         EKSSubnetIds: !If
@@ -430,7 +431,6 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         NodeInstanceRoleName: !GetAtt IamStack.Outputs.NodeInstanceRoleName
         NodeAutoScalingGroup: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
         EksClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
@@ -444,7 +444,6 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
         NodeGroupSecurityGroup: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
@@ -468,6 +467,15 @@ Resources:
     Properties:
       GroupDescription: Cluster communication
       VpcId: !Ref VPCID
+  ControlPlaneSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow SG members to access k8s api
+      GroupId: !Ref ControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
   EKSControlPlane:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -502,6 +510,7 @@ Resources:
         GetCallerArnLambdaArn: !GetAtt FunctionStack.Outputs.GetCallerArnLambdaArn
         BastionRole: !GetAtt IamStack.Outputs.BastionRole
         FunctionRoleArn: !GetAtt IamStack.Outputs.KubernetesAdminRoleArn
+        HelmExecutionRoleArn: !GetAtt IamStack.Outputs.HelmExecutionRoleArn
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
         EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint
@@ -518,7 +527,6 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
   GrafanaStack:
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
@@ -529,10 +537,7 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
-        HelmLambdaArn: !GetAtt FunctionStack.Outputs.HelmLambdaArn
 Outputs:
-  HelmLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.HelmLambdaArn
   KubeManifestLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
   KubeGetLambdaArn:

@@ -6,8 +6,6 @@ Metadata:
   QSLint:
     Exclusions: [W9002, W9003, W9004, W9006]
 Parameters:
-  HelmLambdaArn:
-    Type: String
   NodeGroupSecurityGroup:
     Type: AWS::EC2::SecurityGroup::Id
   PrivateSubnet1ID:
@@ -79,11 +77,9 @@ Resources:
       SecurityGroups: [ !Ref NodeGroupSecurityGroup ]
       SubnetId: !Ref PrivateSubnet3ID
   EFSProvisioner:
-    Type: 'Custom::Helm'
-    Version: '1.0'
+    Type: 'AWSQS::Kubernetes::Helm'
     Properties:
-      ServiceToken: !Ref HelmLambdaArn
-      ClusterName: !Ref ClusterName
+      ClusterID: !Ref ClusterName
       Namespace: efs-provisioner
       Chart: stable/efs-provisioner
       Values:

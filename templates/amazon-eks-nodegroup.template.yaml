@@ -740,10 +740,10 @@ Resources:
       FromPort: 0
       ToPort: 65535
   ManagedNodeSecurityGroupIngress:
-    Condition: EnableManagedNodeGroup
-    Type: AWS::EC2::SecurityGroupIngress
     Metadata:
       cfn-lint: { config: { ignore_checks: [E3008] } }
+    Condition: EnableManagedNodeGroup
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Allow nodes to communicate with each other
       GroupId: !Ref NodeSG

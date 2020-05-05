@@ -4,8 +4,6 @@ Metadata:
     Exclusions: [W9002, W9003, W9004, W9006]
 Description: "Deploys the auto-scaler helm chart into an existing kubernetes cluster (qs-1ql475ceo)"
 Parameters:
-  HelmLambdaArn:
-    Type: String
   NodeInstanceRoleName:
     Type: String
   NodeAutoScalingGroup:
@@ -56,11 +54,9 @@ Resources:
   AutoScalerHelmChart:
     DependsOn:
       - ClusterAutoScalerPolicy
-    Type: "Custom::Helm"
-    Version: "1.0"
+    Type: "AWSQS::Kubernetes::Helm"
     Properties:
-      ServiceToken: !Ref HelmLambdaArn
-      ClusterName: !Ref EksClusterName
+      ClusterID: !Ref EksClusterName
       Namespace: kube-system
       Chart: stable/cluster-autoscaler
       Values:

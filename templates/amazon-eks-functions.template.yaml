@@ -55,7 +55,9 @@ Parameters:
     Type: String
   NodeSGRoleArn:
     Type: String
-  ExecutionRoleArn:
+  EksClusterResourceExecutionRoleArn:
+    Type: String
+  HelmExecutionRoleArn:
     Type: String
   EKSSubnetIds:
     Type: List<String>
@@ -73,19 +75,18 @@ Resources:
       SourceBucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Prefix: !Ref 'QSS3KeyPrefix'
       Objects:
-      - functions/packages/Helm/lambda.zip
       - functions/packages/DeleteBucketContents/lambda.zip
       - functions/packages/KubeManifest/lambda.zip
       - functions/packages/KubeGet/lambda.zip
       - functions/packages/CleanupLoadBalancers/lambda.zip
       - functions/packages/CleanupSecurityGroupDependencies/lambda.zip
       - functions/packages/kubectlLayer/lambda.zip
-      - functions/packages/helmLayer/lambda.zip
       - functions/packages/crhelperLayer/lambda.zip
       - functions/packages/GetCallerArn/lambda.zip
       - functions/packages/createVpcRole/lambda.zip
       - functions/packages/registerType/lambda.zip
       - functions/packages/EksClusterResource/awsqs-eks-cluster.zip
+      - functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip
       - functions/packages/awscliLayer/lambda.zip
   ArtifactCopyPolicy:
     Type: AWS::S3::BucketPolicy
@@ -104,6 +105,7 @@ Resources:
             Resource:
               - !Sub "arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}"
               - !Sub "arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
+              - !Sub "arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip"
   KubectlLayer:
     DependsOn: CopyZips
     Type: AWS::Lambda::LayerVersion
@@ -118,13 +120,6 @@ Resources:
       Content:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/awscliLayer/lambda.zip'
-  HelmLayer:
-    DependsOn: CopyZips
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      Content:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/helmLayer/lambda.zip'
   CrhelperLayer:
     DependsOn: CopyZips
     Type: AWS::Lambda::LayerVersion
@@ -179,7 +174,7 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/registerType/lambda.zip'
-  RegisterType:
+  RegisterEksClusterType:
     DependsOn: ArtifactCopyPolicy
     Type: Custom::RegisterType
     Properties:
@@ -188,7 +183,17 @@ Resources:
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
       LogRoleArn: !Ref LogRoleArn
       LogGroupName: "awsqs-eks-cluster-logs"
-      ExecutionRoleArn: !Ref ExecutionRoleArn
+      ExecutionRoleArn: !Ref EksClusterResourceExecutionRoleArn
+  RegisterHelmType:
+    DependsOn: ArtifactCopyPolicy
+    Type: Custom::RegisterType
+    Properties:
+      ServiceToken: !GetAtt RegisterTypeFunction.Arn
+      TypeName: "AWSQS::Kubernetes::Helm"
+      SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip"
+      LogRoleArn: !Ref LogRoleArn
+      LogGroupName: "awsqs-kubernetes-helm-logs"
+      ExecutionRoleArn: !Ref HelmExecutionRoleArn
   CleanupSecurityGroupDependenciesLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
@@ -223,23 +228,6 @@ Resources:
       IpProtocol: tcp
       ToPort: 443
       FromPort: 443
-  HelmLambda:
-    DependsOn: [ CopyZips, LambdaSGCleanup ]
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: lambda_function.lambda_handler
-      MemorySize: 512
-      Role: !Ref KubernetesAdminRoleArn
-      Runtime: python3.7
-      Timeout: 900
-      Layers: [!Ref KubectlLayer, !Ref HelmLayer, !Ref CrhelperLayer, !Ref AwsCliLayer]
-      Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/Helm/lambda.zip'
-      Environment: { Variables: { KUBECONFIG: /tmp/.kube/config } }
-      VpcConfig:
-        SecurityGroupIds: [!Ref EKSLambdaSecurityGroup]
-        SubnetIds: !Ref EKSSubnetIds
   KubeManifestLambda:
     DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
@@ -379,8 +367,6 @@ Resources:
           def handler(event, context):
               helper(event, context)
 Outputs:
-  HelmLambdaArn:
-    Value: !GetAtt HelmLambda.Arn
   DeleteBucketContentsLambdaArn:
     Value: !If [ CreateDeleteBucketContentsLambda, !GetAtt DeleteBucketContentsLambda.Arn, "" ]
   KubeManifestLambdaArn:
