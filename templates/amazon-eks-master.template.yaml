@@ -114,7 +114,7 @@ Metadata:
       ManagedNodeGroupAMIType:
         default: Managed node group AMI type
       MangedNodeGroupLabel:
-        default: Managed Node Group Label
+        default: Managed node group label
       AdditionalEKSAdminUserArn:
         default: Additional EKS admin ARN (IAM user)
       AdditionalEKSAdminRoleArn:
@@ -140,7 +140,7 @@ Metadata:
       ProvisionBastionHost:
         default: Provision bastion host
       BastionHostHelmVersion:
-        default: Helm Version to deploy on Bastion Host
+        default: Helm version to deploy on bastion host
       EKSPrivateAccessEndpoint:
         default: EKS private access endpoint
       EKSPublicAccessEndpoint:
@@ -362,7 +362,7 @@ Parameters:
     Default: "AL2_x86_64"
     Type: String
   MangedNodeGroupLabel:
-    Description: Add a custom name label to the Managed Node Group Nodes. If you dont do this then a default one will be added for you.
+    Description: Add a custom name label to the managed node group nodes. If you dont do this then a default one will be added for you.
     Type: String
     Default: ''
   KubernetesVersion:
@@ -418,7 +418,7 @@ Parameters:
     Type: String
     AllowedValues: [ "Helm2", "Helm3" ]
     Default: "Helm2"
-    Description: "If Bastion host is enabled, select your desired helm version to install on it. If Bastion is disabled this does not matter. Helm 2 is the current Default."
+    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 2 is the current Default."
 Rules:
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
