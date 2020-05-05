@@ -182,6 +182,11 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
+  BastionHostHelmVersion:
+    Type: String
+    AllowedValues: [ "Helm2", "Helm3" ]
+    Default: "Helm2"
+    Description: "If Bastion host is enabled, select your desired helm version to install on it. If Bastion is disabled this does not matter. Helm 2 is the current Default."
   BastionBootstrapScript:
     Default: ""
     Type: String
@@ -241,6 +246,7 @@ Conditions:
   EnableMonitoringPrometheusGrafana: !Equals [!Ref 'ProvisionMonitoringStack', 'Prometheus + Grafana']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  Helm3Selected: !Equals [!Ref BastionHostHelmVersion, 'Helm3']
 Resources:
   BastionEksPermissions:
     Condition: EnableBastion
@@ -288,10 +294,16 @@ Resources:
         RootVolumeSize: !Ref BastionRootVolumeSize
         AlternativeInitializationScript: !If
           - DefaultBastionBootstrap
-          - !Sub
-            - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
-            - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
-              S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+          - !If
+            - Helm3Selected
+            - !Sub
+                - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/bastion_bootstrap-helm3.sh'
+                - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                  S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+            - !Sub
+              - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}scripts/bastion_bootstrap.sh'
+              - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+                S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
           - !Ref BastionBootstrapScript
         AlternativeIAMRole: !GetAtt IamStack.Outputs.BastionRole
         BastionAMIOS: !Ref BastionOS
