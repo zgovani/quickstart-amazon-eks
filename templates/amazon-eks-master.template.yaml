@@ -31,7 +31,6 @@ Metadata:
           - PublicSubnet3CIDR
           - RemoteAccessCIDR
           - ProvisionBastionHost
-          - BastionHostHelmVersion
       - Label:
           default: Amazon EC2 configuration
         Parameters:
@@ -139,8 +138,6 @@ Metadata:
         default: Number of Availability Zones
       ProvisionBastionHost:
         default: Provision bastion host
-      BastionHostHelmVersion:
-        default: Helm version to deploy on bastion host
       EKSPrivateAccessEndpoint:
         default: EKS private access endpoint
       EKSPublicAccessEndpoint:
@@ -414,11 +411,6 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
     Description: "Skip creating a bastion host by setting this is set to Disabled."
-  BastionHostHelmVersion:
-    Type: String
-    AllowedValues: [ "Helm2", "Helm3" ]
-    Default: "Helm3"
-    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 3 is the current default."
 Rules:
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -440,7 +432,6 @@ Conditions:
     - !Equals [!Ref NumberOfAZs, "2"]
     - !Equals [!Ref NumberOfAZs, "3"]
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
-  BastionHostEnabled: !Equals [!Ref ProvisionBastionHost, 'Enabled']
 Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
@@ -517,7 +508,6 @@ Resources:
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionMonitoringStack: !Ref MonitoringStack
         ProvisionBastionHost: !Ref ProvisionBastionHost
-        BastionHostHelmVersion: !Ref 'BastionHostHelmVersion'
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
         EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint

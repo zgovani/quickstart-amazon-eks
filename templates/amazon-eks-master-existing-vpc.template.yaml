@@ -30,7 +30,6 @@ Metadata:
         Parameters:
           - KeyPairName
           - ProvisionBastionHost
-          - BastionHostHelmVersion
       - Label:
           default: Amazon EKS configuration
         Parameters:
@@ -118,8 +117,6 @@ Metadata:
         default: EFS provisioned throughput in Mibps
       ProvisionBastionHost:
         default: Provision bastion host
-      BastionHostHelmVersion:
-        default: Helm version to deploy on bastion host
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -346,11 +343,6 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
     Description: "Skip creating a bastion host by setting this is set to Disabled."
-  BastionHostHelmVersion:
-    Type: String
-    AllowedValues: [ "Helm2", "Helm3" ]
-    Default: "Helm3"
-    Description: "If bastion host is enabled, select your desired helm version to install on it. If bastion is disabled this does not matter. Helm 3 is the current default."
 Rules:
   EKSVersion_ManagedNodeGrou:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -408,7 +400,6 @@ Resources:
         EfsThroughputMode: !Ref EfsThroughputMode
         EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ProvisionBastionHost: !Ref ProvisionBastionHost
-        BastionHostHelmVersion: !Ref 'BastionHostHelmVersion'
         EKSPublicAccessCIDRs: !Join [ ',', !Ref 'EKSPublicAccessCIDRs' ]
         EKSPublicAccessEndpoint: !Ref EKSPublicAccessEndpoint
         EKSPrivateAccessEndpoint: !Ref EKSPrivateAccessEndpoint
