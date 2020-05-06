@@ -761,16 +761,6 @@ Resources:
       IpProtocol: tcp
       FromPort: 1025
       ToPort: 65535
-  ControlPlaneEgressToNodeSecurityGroup:
-    Condition: DisableManagedNodeGroup
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with worker Kubelet and pods
-      GroupId: !Ref ControlPlaneSecurityGroup
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      FromPort: 1025
-      ToPort: 65535
   NodeSecurityGroupFromControlPlaneOn443Ingress:
     Condition: DisableManagedNodeGroup
     Type: AWS::EC2::SecurityGroupIngress
@@ -778,16 +768,6 @@ Resources:
       Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
       GroupId: !Ref NodeSecurityGroup
       SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-  ControlPlaneEgressToNodeSecurityGroupOn443:
-    Condition: DisableManagedNodeGroup
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
-      GroupId: !Ref ControlPlaneSecurityGroup
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443

@@ -476,15 +476,6 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
-  ControlPlaneSecurityGroupEgress:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow SG members outbound access
-      GroupId: !Ref ControlPlaneSecurityGroup
-      CidrIp: 0.0.0.0/0
-      IpProtocol: '-1'
-      FromPort: 0
-      ToPort: 65535
   EKSControlPlane:
     Type: AWS::CloudFormation::Stack
     Properties:
