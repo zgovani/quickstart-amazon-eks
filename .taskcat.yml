@@ -37,7 +37,7 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
     regions:
-      - eu-north-1
+      - us-west-2
   cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
