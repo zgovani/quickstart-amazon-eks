@@ -167,6 +167,14 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
+  IAMOIDCProvider:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
+  ProvisionALBIngressController:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
   ProvisionMonitoringStack:
     Type: String
     AllowedValues: [ "Prometheus + Grafana", "None" ]
@@ -238,6 +246,10 @@ Conditions:
   CustomBastionRole: !Not [!Equals [!Ref 'BastionIAMRoleName', '']]
   AdditionalVars: !Not [!Equals [!Ref 'BastionVariables', '']]
   EnableClusterAutoScaler: !Equals [!Ref 'ProvisionClusterAutoScaler', 'Enabled']
+  EnableIAMOIDCProvider: !Or
+    - !Equals [!Ref 'IAMOIDCProvider', 'Enabled']
+    - !Equals [!Ref 'ProvisionALBIngressController', 'Enabled']
+  EnableALBIngressController: !Equals [!Ref 'ProvisionALBIngressController', 'Enabled']
   EnableMonitoringPrometheusGrafana: !Equals [!Ref 'ProvisionMonitoringStack', 'Prometheus + Grafana']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -525,6 +537,28 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+  OIDCStack:
+    Condition: EnableIAMOIDCProvider
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-oidc-provider.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+  ALBIngressStack:
+    Condition: EnableALBIngressController
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-alb-ingress.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
+        ClusterOIDCURL: !GetAtt OIDCStack.Outputs.ClusterOIDCURL
+        ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
@@ -561,3 +595,8 @@ Outputs:
     Value: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
   NodeAutoScalingGroup:
     Value: !GetAtt NodeGroupStack.Outputs.NodeAutoScalingGroup
+  ClusterOIDCURL:
+    Value: !If
+      - EnableIAMOIDCProvider
+      - !GetAtt OIDCStack.Outputs.ClusterOIDCURL
+      - ""
