@@ -12,7 +12,6 @@ project:
   - me-south-1
   - sa-east-1
   - us-east-1
-  - us-east-2
   template: templates/amazon-eks-master.template.yaml
   parameters:
     RemoteAccessCIDR: 10.0.0.0/16
@@ -95,4 +94,9 @@ tests:
       MangedNodeGroupLabel: TestMNG
     regions:
     - us-west-2
-
+  alb-ingress:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ALBIngressController: Enabled
+    regions:
+      - us-east-2

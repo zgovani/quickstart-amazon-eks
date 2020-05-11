@@ -545,7 +545,7 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
-        OIDCIssuerURLWithoutProtocol:  !Join [ '', !Split [ 'https://', !GetAtt EKSControlPlane.Outputs.OIDCIssuerURL ]
+        OIDCIssuerURLWithoutProtocol:  !Join [ '', !Split [ 'https://', !GetAtt EKSControlPlane.Outputs.OIDCIssuerURL ] ]
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
 Outputs:
   KubeManifestLambdaArn:

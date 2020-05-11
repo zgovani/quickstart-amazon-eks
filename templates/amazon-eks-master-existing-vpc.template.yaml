@@ -53,6 +53,7 @@ Metadata:
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
+          - ALBIngressController
           - ClusterAutoScaler
           - EfsStorageClass
           - EfsPerformanceMode
@@ -117,6 +118,8 @@ Metadata:
         default: EFS provisioned throughput in Mibps
       ProvisionBastionHost:
         default: Provision bastion host
+      ALBIngressController:
+        default: ALB ingress controller
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -343,6 +346,11 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
     Description: "Skip creating a bastion host by setting this is set to Disabled."
+  ALBIngressController:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
+    Description: "Set ths to Enabled to deploy the ALB ingress controller."
 Rules:
   EKSVersion_ManagedNodeGrou:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -363,6 +371,8 @@ Conditions:
 Resources:
   EKSStack:
     Type: AWS::CloudFormation::Stack
+    Metadata:
+      cfn-lint: { config: { ignore_checks: [ W9901 ] } }
     Properties:
       TemplateURL: !Sub
         - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks.template.yaml'
@@ -406,6 +416,7 @@ Resources:
         EKSClusterLoggingTypes: !Join [ ',', !Ref 'EKSClusterLoggingTypes' ]
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
+        ProvisionALBIngressController: !Ref ALBIngressController
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn

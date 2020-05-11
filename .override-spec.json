@@ -131,6 +131,9 @@
         },
         "CertificateAuthorityData": {
           "PrimitiveType": "String"
+        },
+        "OIDCIssuerURL": {
+          "PrimitiveType": "String"
         }
       },
       "Properties": {

@@ -1,11 +1,13 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Deploys the alb ingress controller to an existing kubernetes cluster"
+Description: "Deploys the alb ingress controller to an existing kubernetes cluster (qs-1qnl6p00n)"
+Metadata:
+  QSLint:
+    Exclusions: [W9002, W9003, W9004, W9006]
 Parameters:
   KubeManifestLambdaArn:
     Type: String
   OIDCIssuerURLWithoutProtocol:
     Type: String
-    Description: OpenID Connect URL from the EKS Cluster without the (https://) protocol
   ClusterName:
     Type: String
 Resources:

@@ -58,6 +58,7 @@ Metadata:
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
+          - ALBIngressController
           - ClusterAutoScaler
           - EfsStorageClass
           - EfsPerformanceMode
@@ -150,6 +151,8 @@ Metadata:
         default: Encrypt EKS secrets
       EKSEncryptSecretsKmsKeyArn:
         default: Encrypt EKS secrets KMS key ARN
+      ALBIngressController:
+        default: ALB ingress controller
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -411,6 +414,11 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Enabled"
     Description: "Skip creating a bastion host by setting this is set to Disabled."
+  ALBIngressController:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
+    Description: "Set this to Enabled to deploy the ALB ingress controller."
 Rules:
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -514,6 +522,7 @@ Resources:
         EKSClusterLoggingTypes: !Join [ ',', !Ref 'EKSClusterLoggingTypes' ]
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
+        ProvisionALBIngressController: !Ref ALBIngressController
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
