@@ -76,6 +76,8 @@ tests:
       NumberOfAZs: "2"
     regions:
     - ca-central-1
+    - cn-north-1
+    - cn-northwest-1
   no-logging:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
