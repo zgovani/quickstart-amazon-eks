@@ -35,8 +35,18 @@ def register(event, _):
         },
         "ExecutionRoleArn": event['ResourceProperties']['ExecutionRoleArn']
     }
-    response = cfn.register_type(**kwargs)
-    version_arn = stabilize(response['RegistrationToken'])
+    retries = 3
+    while True:
+        try:
+            response = cfn.register_type(**kwargs)
+            version_arn = stabilize(response['RegistrationToken'])
+            break
+        except Exception as e:
+            if not retries:
+                raise
+            retries -= 1
+            logger.error(e, exc_info=True)
+            sleep(60)
     if version_arn:
         cfn.set_type_default_version(Arn=version_arn)
     return version_arn
