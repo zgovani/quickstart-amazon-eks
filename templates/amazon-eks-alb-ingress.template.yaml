@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "deploy an example workload into an existing kubernetes cluster"
+Description: "Deploys the alb ingress controller to an existing kubernetes cluster"
 Parameters:
   KubeManifestLambdaArn:
     Type: String
-  ClusterOIDCURL:
+  OIDCIssuerURLWithoutProtocol:
     Type: String
-    Description: The OpenID Connect URL without protocol (the "https://" prefix)
+    Description: OpenID Connect URL from the EKS Cluster without the (https://) protocol
   ClusterName:
     Type: String
 Resources:
@@ -19,12 +19,12 @@ Resources:
             {
               "Effect": "Allow",
               "Principal": {
-                "Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${ClusterOIDCURL}"
+                "Federated": "arn:aws:iam::${AWS::AccountId}:oidc-provider/${OIDCIssuerURLWithoutProtocol}"
               },
               "Action": "sts:AssumeRoleWithWebIdentity",
               "Condition": {
                 "StringEquals": {
-                  "${ClusterOIDCURL}:sub": "system:serviceaccount:kube-system:alb-ingress-controller"
+                  "${OIDCIssuerURLWithoutProtocol}:sub": "system:serviceaccount:kube-system:alb-ingress-controller"
                 }
               }
             }
