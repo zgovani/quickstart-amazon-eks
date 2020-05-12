@@ -174,6 +174,7 @@ EOF
 function setup_logs () {
 
     echo "${FUNCNAME[0]} Started"
+    URL_SUFFIX="${URL_SUFFIX:-amazonaws.com}"
 
     if [[ "${release}" == "SLES" ]]; then
         curl "https://amazoncloudwatch-agent-${REGION}.s3.${REGION}.${URL_SUFFIX}/suse/amd64/latest/amazon-cloudwatch-agent.rpm" -O
@@ -278,7 +279,13 @@ EOF
         apt-get install -y bash-completion
         echo "0 0 * * * unattended-upgrades -d" > ~/mycron
     else
-        yum install -y bash-completion --enablerepo=epel
+        OS_VERSION=`cat /etc/os-release | grep '^VERSION=' |  tr -d \" | sed 's/\n//g' | sed 's/VERSION=//g'`
+        if [[ "${OS_VERSION}" == "2" ]]; then
+            amazon-linux-extras install epel
+            yum install -y bash-completion
+        else
+            yum install -y bash-completion --enablerepo=epel
+        fi
         echo "0 0 * * * yum -y update --security" > ~/mycron
     fi
 
