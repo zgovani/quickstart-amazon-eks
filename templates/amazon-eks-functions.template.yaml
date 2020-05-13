@@ -335,7 +335,7 @@ Resources:
   NodeSGFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Copies objects from a source S3 bucket to a destination
+      Description: Fetches the Security Group ID for a given EKS Managed Node Group
       Handler: index.handler
       Runtime: python3.7
       Role:  !Ref NodeSGRoleArn
