@@ -38,7 +38,13 @@ def register(event, _):
     retries = 3
     while True:
         try:
-            response = cfn.register_type(**kwargs)
+            try:
+                response = cfn.register_type(**kwargs)
+            except cfn.exceptions.CFNRegistryException as e:
+                if "Maximum number of versions exceeded" not in str(e):
+                    raise
+                delete_oldest(event['ResourceProperties']['TypeName'])
+                continue
             version_arn = stabilize(response['RegistrationToken'])
             break
         except Exception as e:
@@ -52,14 +58,35 @@ def register(event, _):
     return version_arn
 
 
+def delete_oldest(name):
+    versions = cfn.list_type_versions(Type='RESOURCE', TypeName=name)['TypeVersionSummaries']
+    if len(versions) < 2:
+        return
+    try:
+        try:
+            cfn.deregister_type(Arn=versions[0]['Arn'])
+        except cfn.exceptions.CFNRegistryException as e:
+            if "is the default version" not in str(e):
+                raise
+            cfn.deregister_type(Arn=versions[1]['Arn'])
+    except cfn.exceptions.TypeNotFoundException:
+        print("version already deleted...")
+
+
 @helper.delete
-def deregister(event, _):
-    type_name = event['ResourceProperties']['TypeName']
-    versions = cfn.list_type_versions(Type='RESOURCE', TypeName=type_name)['TypeVersionSummaries']
-    if len(versions) > 1:
-        cfn.deregister_type(Arn=event['PhysicalResourceId'])
-    else:
-        cfn.deregister_type(Type='RESOURCE', TypeName=type_name)
+def delete(event, _):
+    if not event['PhysicalResourceId'].startswith("arn:"):
+        print("no valid arn to delete")
+        return
+    try:
+        try:
+            cfn.deregister_type(Arn=event['PhysicalResourceId'])
+        except cfn.exceptions.CFNRegistryException as e:
+            if "is the default version" not in str(e):
+                raise
+            cfn.deregister_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])
+    except cfn.exceptions.TypeNotFoundException:
+        print("type already deleted...")
 
 
 def lambda_handler(event, context):
