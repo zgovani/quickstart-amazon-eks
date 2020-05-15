@@ -420,6 +420,7 @@ Resources:
             - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
             - !Ref PrivateSubnet1ID
   ClusterAutoScalerStack:
+    DependsOn: NodeGroupStack
     Condition: EnableClusterAutoScaler
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -433,6 +434,7 @@ Resources:
         EksClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
         KubernetesVersion: !Ref KubernetesVersion
   EfsStack:
+    DependsOn: NodeGroupStack
     Condition: EnableEfs
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -516,6 +518,7 @@ Resources:
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         IamOidcProvider: !If [ EnableALBIngressController, 'Enabled', !Ref IamOidcProvider ]
   PrometheusStack:
+    DependsOn: NodeGroupStack
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -526,6 +529,7 @@ Resources:
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
   GrafanaStack:
+    DependsOn: NodeGroupStack
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -536,6 +540,7 @@ Resources:
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
   ALBIngressStack:
+    DependsOn: NodeGroupStack
     Condition: EnableALBIngressController
     Type: AWS::CloudFormation::Stack
     Properties:
