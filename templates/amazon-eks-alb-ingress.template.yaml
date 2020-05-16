@@ -121,6 +121,22 @@ Resources:
             Action:
             - waf:GetWebACL
             Resource: "*"
+          - Effect: Allow
+            Action:
+            - wafv2:GetWebACL
+            - wafv2:GetWebACLForResource
+            - wafv2:AssociateWebACL
+            - wafv2:DisassociateWebACL
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - shield:DescribeProtection
+            - shield:GetSubscriptionState
+            - shield:DeleteProtection
+            - shield:CreateProtection
+            - shield:DescribeSubscription
+            - shield:ListProtections
+            Resource: "*"
       Path: "/"
   ALBClusterRole:
     Type: "Custom::KubeManifest"
@@ -235,7 +251,7 @@ Resources:
                    args:
                      - --ingress-class=alb
                      - !Sub "--cluster-name=${ClusterName}"
-                   image: docker.io/amazon/aws-alb-ingress-controller:v1.1.4
+                   image: docker.io/amazon/aws-alb-ingress-controller:v1.1.7
                serviceAccountName: alb-ingress-controller
 
 Outputs:
