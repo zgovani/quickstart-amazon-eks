@@ -87,7 +87,7 @@ def delete(event, _):
             except cfn.exceptions.CFNRegistryException as e:
                 if "is the default version" not in str(e):
                     raise
-                versions = cfn.list_type_versions(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])
+                versions = cfn.list_type_versions(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['TypeVersionSummaries']
                 if len(versions) > 1:
                     versions = [v['Arn'] for v in versions if v['Arn'] != event['PhysicalResourceId']]
                     versions.sort(reverse=True)
