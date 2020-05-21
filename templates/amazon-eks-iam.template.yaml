@@ -488,6 +488,45 @@ Resources:
                 Action:
                   - eks:DescribeNodeGroup
                 Resource: '*'
+  FargateExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: eks-fargate-pods.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy'
+  FargateProfileRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ResourceTypePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                  - "iam:PassRole"
+                  - "iam:GetRole"
+                  - "iam:CreateServiceLinkedRole"
+                  - "ec2:DescribeSubnets"
+                Resource: "*"
 Outputs:
   DeleteBucketContentsRoleArn:
     Value: !If [ CreateDeleteBucketContentsRole, !GetAtt DeleteBucketContentsRole.Arn, "" ]
@@ -523,3 +562,7 @@ Outputs:
     Value: !GetAtt LogDeliveryRole.Arn
   NodeSGRoleArn:
     Value: !GetAtt NodeSGRole.Arn
+  FargateExecutionRoleArn:
+    Value: !GetAtt FargateExecutionRole.Arn
+  FargateProfileRoleArn:
+    Value: !GetAtt FargateProfileRole.Arn

@@ -15,6 +15,8 @@ Metadata:
     - Disabled
     - Prometheus
     - Encrypt
+    - Fargate
+    - namespace
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -55,6 +57,8 @@ Metadata:
           - EKSClusterLoggingTypes
           - EKSEncryptSecrets
           - EKSEncryptSecretsKmsKeyArn
+          - FargateNamespaces
+          - FargateLabels
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -153,6 +157,10 @@ Metadata:
         default: Encrypt EKS secrets KMS key ARN
       ALBIngressController:
         default: ALB ingress controller
+      FargateNamespaces:
+        default: Fargate namespaces
+      FargateLabels:
+        default: Fargate labels
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -419,7 +427,25 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
     Description: "Set this to Enabled to deploy the ALB ingress controller."
+  FargateNamespaces:
+    Type: String
+    Default: ""
+    Description: "[OPTIONAL] Comma separated list of namespaces that Fargate should be enabled for."
+  FargateLabels:
+    Type: String
+    Default: ""
+    Description: >-
+      [OPTIONAL] Comma separated list of key=value pod labels. Requires at least one Fargate namespace to be specified.
+      For a pod to be run on Fargate, all labels must match and it must be running in a namespace included in
+      FargateNamespaces.
 Rules:
+  LablesNeedNamespaces:
+    RuleCondition: !Not
+      - !Equals [ !Ref FargateLabels, "" ]
+    Assertions:
+      - AssertDescription: You must specify at least one Fargate namespace in order to enable fargate.
+        Assert: !Not
+          - !Equals [ !Ref FargateNamespaces, "" ]
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
     Assertions:
@@ -523,6 +549,8 @@ Resources:
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         ProvisionALBIngressController: !Ref ALBIngressController
+        FargateLabels: !Ref FargateLabels
+        FargateNamespaces: !Ref FargateNamespaces
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn

@@ -3,6 +3,7 @@ import logging
 from crhelper import CfnResource
 from time import sleep
 import json
+import random
 
 logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
@@ -38,7 +39,13 @@ def register(event, _):
     retries = 3
     while True:
         try:
-            response = cfn.register_type(**kwargs)
+            try:
+                response = cfn.register_type(**kwargs)
+            except cfn.exceptions.CFNRegistryException as e:
+                if "Maximum number of versions exceeded" not in str(e):
+                    raise
+                delete_oldest(event['ResourceProperties']['TypeName'])
+                continue
             version_arn = stabilize(response['RegistrationToken'])
             break
         except Exception as e:
@@ -52,14 +59,52 @@ def register(event, _):
     return version_arn
 
 
+def delete_oldest(name):
+    versions = cfn.list_type_versions(Type='RESOURCE', TypeName=name)['TypeVersionSummaries']
+    if len(versions) < 2:
+        return
+    try:
+        try:
+            cfn.deregister_type(Arn=versions[0]['Arn'])
+        except cfn.exceptions.CFNRegistryException as e:
+            if "is the default version" not in str(e):
+                raise
+            cfn.deregister_type(Arn=versions[1]['Arn'])
+    except cfn.exceptions.TypeNotFoundException:
+        print("version already deleted...")
+
+
 @helper.delete
-def deregister(event, _):
-    type_name = event['ResourceProperties']['TypeName']
-    versions = cfn.list_type_versions(Type='RESOURCE', TypeName=type_name)['TypeVersionSummaries']
-    if len(versions) > 1:
-        cfn.deregister_type(Arn=event['PhysicalResourceId'])
-    else:
-        cfn.deregister_type(Type='RESOURCE', TypeName=type_name)
+def delete(event, _):
+    if not event['PhysicalResourceId'].startswith("arn:"):
+        print("no valid arn to delete")
+        return
+    retries = 0
+    while True:
+        try:
+            try:
+                cfn.deregister_type(Arn=event['PhysicalResourceId'])
+            except cfn.exceptions.CFNRegistryException as e:
+                if "is the default version" not in str(e):
+                    raise
+                versions = cfn.list_type_versions(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['TypeVersionSummaries']
+                if len(versions) > 1:
+                    versions = [v['Arn'] for v in versions if v['Arn'] != event['PhysicalResourceId']]
+                    versions.sort(reverse=True)
+                    cfn.set_type_default_version(Arn=versions[0])
+                    cfn.deregister_type(Arn=event['PhysicalResourceId'])
+                else:
+                    cfn.deregister_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])
+            return
+        except cfn.exceptions.TypeNotFoundException:
+            print("type already deleted...")
+            return
+        except Exception as e:
+            retries += 1
+            if retries > 5:
+                raise
+            logger.error(e, exc_info=True)
+            sleep(random.choice([1, 2, 3, 4, 5]))
 
 
 def lambda_handler(event, context):

@@ -232,7 +232,14 @@ Parameters:
   HttpProxy:
     Type: String
     Default: ""
+  FargateNamespaces:
+    Type: String
+    Default: ""
+  FargateLabels:
+    Type: String
+    Default: ""
 Conditions:
+  EnableFargate: !Not [!Equals [ !Ref FargateNamespaces, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
     - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
@@ -412,6 +419,7 @@ Resources:
         HelmExecutionRoleArn: !GetAtt IamStack.Outputs.HelmExecutionRoleArn
         LogRoleArn: !GetAtt IamStack.Outputs.LogDeliveryRoleArn
         NodeSGRoleArn: !GetAtt IamStack.Outputs.NodeSGRoleArn
+        FargateProfileRoleArn: !GetAtt IamStack.Outputs.FargateProfileRoleArn
         EKSSubnetIds: !If
           - 3AZDeployment
           - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]]
@@ -421,6 +429,10 @@ Resources:
             - !Ref PrivateSubnet1ID
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
+    Metadata:
+      DependsOn:
+       - !Ref ControlPlaneSecurityGroupIngress
+       - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub
@@ -435,6 +447,10 @@ Resources:
   EfsStack:
     Condition: EnableEfs
     Type: AWS::CloudFormation::Stack
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
     Properties:
       TemplateURL: !Sub
         - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-efs.template.yaml'
@@ -516,6 +532,11 @@ Resources:
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         IamOidcProvider: !If [ EnableALBIngressController, 'Enabled', !Ref IamOidcProvider ]
   PrometheusStack:
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !Ref NodeGroupStack
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -526,6 +547,11 @@ Resources:
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
   GrafanaStack:
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !Ref NodeGroupStack
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
     Condition: EnableMonitoringPrometheusGrafana
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -535,7 +561,33 @@ Resources:
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+  FargateStack:
+    Condition: EnableFargate
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+         - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-fargate-profile.template.yaml'
+         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+        FargateProfileLambdaArn: !GetAtt FunctionStack.Outputs.FargateProfileLambdaArn
+        FargateExecutionRoleArn: !GetAtt IamStack.Outputs.FargateExecutionRoleArn
+        Namespaces: !Ref FargateNamespaces
+        Labels: !Ref FargateLabels
+        Subnets: !If
+          - 3AZDeployment
+          - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID, !Ref PrivateSubnet3ID ]]
+          - !If
+            - 2AZDeployment
+            - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
+            - !Ref PrivateSubnet1ID
   ALBIngressStack:
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !Ref NodeGroupStack
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
     Condition: EnableALBIngressController
     Type: AWS::CloudFormation::Stack
     Properties:
