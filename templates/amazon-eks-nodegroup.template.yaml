@@ -584,7 +584,7 @@ Mappings:
     eu-north-1:
       AMZNEKS116: ami-030f9071e0d32b989
       AMZNEKS116GPU: ami-0928efc18a4fa6c75
-      MZNEKS115: ami-047667dadeffd78b9
+      AMZNEKS115: ami-0efc0441f778f5826
       AMZNEKS115GPU: ami-03d6bc6745788f9dd
       SLES15EKS115: ami-0741fa1a008af40ad
       SLES15EKS115GPU: ami-0741fa1a008af40ad
