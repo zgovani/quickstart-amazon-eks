@@ -161,8 +161,8 @@ Parameters:
     Default: ""
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.13", "1.14", "1.15" ]
-    Default: "1.15"
+    AllowedValues: [ "1.13", "1.14", "1.15", "1.16" ]
+    Default: "1.16"
   ProvisionClusterAutoScaler:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]

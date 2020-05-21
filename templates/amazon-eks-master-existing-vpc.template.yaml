@@ -279,8 +279,8 @@ Parameters:
     Default: ''
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.15", "1.14", "1.13" ]
-    Default: "1.15"
+    AllowedValues: [ "1.16", "1.15", "1.14", "1.13" ]
+    Default: "1.16"
     Description: The Kubernetes control plane version.
   LambdaZipsBucketName:
     Description: '[OPTIONAL] The name of the S3 bucket where the Lambda zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
@@ -357,7 +357,7 @@ Rules:
     Assertions:
       - AssertDescription: To use Managed Node Groups you must use EKS version 1.14 or higher
         Assert: !Contains
-          - [ '1.14', '1.15' ]
+          - [ '1.14', '1.15', '1.16' ]
           - !Ref 'KubernetesVersion'
   ClusterAutoScalerVerification:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
