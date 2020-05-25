@@ -335,6 +335,7 @@ Parameters:
   EfsProvisionedThroughputInMibps:
     Type: Number
     MinValue: 0
+    MaxValue: 1024
     Default: 0
     Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
   HttpProxy:
