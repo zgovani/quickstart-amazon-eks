@@ -12,8 +12,8 @@ Parameters:
     Type: String
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.15", "1.14", "1.13" ]
-    Default: "1.15"
+    AllowedValues: [ "1.16", "1.15", "1.14", "1.13" ]
+    Default: "1.16"
 # NOTE: The cluster autoscaler version number is dependant on the K8S version it is being
 #       deployed into. See...
 #       https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
@@ -26,6 +26,8 @@ Mappings:
       ImageTag: v1.14.7
     "1.15":
       ImageTag: v1.15.5
+    "1.16":
+      ImageTag: v1.16.8
 Resources:
   # Policy to apply to NodeInstanceRole
   ClusterAutoScalerPolicy:

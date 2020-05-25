@@ -15,6 +15,8 @@ Metadata:
     - Disabled
     - Prometheus
     - Encrypt
+    - Fargate
+    - namespace
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -55,6 +57,8 @@ Metadata:
           - EKSClusterLoggingTypes
           - EKSEncryptSecrets
           - EKSEncryptSecretsKmsKeyArn
+          - FargateNamespaces
+          - FargateLabels
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -153,6 +157,10 @@ Metadata:
         default: Encrypt EKS secrets KMS key ARN
       ALBIngressController:
         default: ALB ingress controller
+      FargateNamespaces:
+        default: Fargate namespaces
+      FargateLabels:
+        default: Fargate labels
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -367,8 +375,8 @@ Parameters:
     Default: ''
   KubernetesVersion:
     Type: String
-    AllowedValues: [ "1.13", "1.14", "1.15" ]
-    Default: "1.15"
+    AllowedValues: [ "1.13", "1.14", "1.15", "1.16" ]
+    Default: "1.16"
     Description: The Kubernetes control plane version.
   LambdaZipsBucketName:
     Description: '[OPTIONAL] The name of the S3 bucket where the Lambda zip files should be placed. If you leave this parameter blank, an S3 bucket will be created.'
@@ -397,8 +405,9 @@ Parameters:
   EfsProvisionedThroughputInMibps:
     Type: Number
     MinValue: 0
+    MaxValue: 1024
     Default: 0
-    Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled.
+    Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled. If using Provisioned Throughput, value must be between 0-1024.
   MonitoringStack:
     Type: String
     AllowedValues: [ "Prometheus + Grafana", "None" ]
@@ -419,13 +428,31 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
     Description: "Set this to Enabled to deploy the ALB ingress controller."
+  FargateNamespaces:
+    Type: String
+    Default: ""
+    Description: "[OPTIONAL] Comma separated list of namespaces that Fargate should be enabled for."
+  FargateLabels:
+    Type: String
+    Default: ""
+    Description: >-
+      [OPTIONAL] Comma separated list of key=value pod labels. Requires at least one Fargate namespace to be specified.
+      For a pod to be run on Fargate, all labels must match and it must be running in a namespace included in
+      FargateNamespaces.
 Rules:
+  LablesNeedNamespaces:
+    RuleCondition: !Not
+      - !Equals [ !Ref FargateLabels, "" ]
+    Assertions:
+      - AssertDescription: You must specify at least one Fargate namespace in order to enable fargate.
+        Assert: !Not
+          - !Equals [ !Ref FargateNamespaces, "" ]
   EKSVersion_ManagedNodeGroup:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
     Assertions:
       - AssertDescription: To use Managed Node Groups you must use EKS version 1.14 or higher
         Assert: !Contains
-          - [ '1.15', '1.14' ]
+          - [ '1.16', '1.15', '1.14' ]
           - !Ref 'KubernetesVersion'
   ClusterAutoScalerVerification:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -523,6 +550,8 @@ Resources:
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         ProvisionALBIngressController: !Ref ALBIngressController
+        FargateLabels: !Ref FargateLabels
+        FargateNamespaces: !Ref FargateNamespaces
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn

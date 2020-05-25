@@ -20,9 +20,10 @@ Parameters:
     Type: String
     AllowedValues: [ generalPurpose, maxIO ]
     Default: generalPurpose
-  ProvisionedThroughputInMibps:
+  EfsProvisionedThroughputInMibps:
     Type: Number
     MinValue: 0
+    MaxValue: 1024
     Default: 0
   ThroughputMode:
     Type: String
@@ -34,16 +35,16 @@ Rules:
   ProvisionedThroughput:
     RuleCondition: !Equals [ !Ref ThroughputMode, provisioned ]
     Assertions:
-      - Assert: !Not [ !Equals [ '0', !Ref ProvisionedThroughputInMibps ] ]
-        AssertDescription: "ProvisionedThroughputInMibps must be greater than 0 when ThroughputMode is provisioned"
+      - Assert: !Not [ !Equals [ '0', !Ref EfsProvisionedThroughputInMibps ] ]
+        AssertDescription: "EfsProvisionedThroughputInMibps must be greater than 0 when ThroughputMode is provisioned"
   BurstingThroughput:
     RuleCondition: !Equals [ !Ref ThroughputMode, bursting ]
     Assertions:
-      - Assert:  !Equals [ '0', !Ref ProvisionedThroughputInMibps ]
-        AssertDescription: "ProvisionedThroughputInMibps must be 0 when ThroughputMode is bursting"
+      - Assert:  !Equals [ '0', !Ref EfsProvisionedThroughputInMibps ]
+        AssertDescription: "EfsProvisionedThroughputInMibps must be 0 when ThroughputMode is bursting"
 Conditions:
   IsProvisioned:
-    !Equals [ ThroughputMode, provisioned ]
+    !Equals [ !Ref ThroughputMode, provisioned ]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
     - !Not [!Equals [!Ref PrivateSubnet2ID, ""]]
@@ -54,7 +55,7 @@ Resources:
     Properties:
       Encrypted: true
       PerformanceMode: !Ref PerformanceMode
-      ProvisionedThroughputInMibps: !If [ IsProvisioned, !Ref ProvisionedThroughputInMibps, !Ref 'AWS::NoValue' ]
+      ProvisionedThroughputInMibps: !If [ IsProvisioned, !Ref EfsProvisionedThroughputInMibps, !Ref 'AWS::NoValue' ]
       ThroughputMode: !Ref ThroughputMode
   MountTargetPrivateSubnet1:
     Type: AWS::EFS::MountTarget
