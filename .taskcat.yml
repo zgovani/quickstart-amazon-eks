@@ -53,6 +53,15 @@ tests:
       ProvisionBastionHost: Disabled
     regions:
     - eu-north-1
+  efs-prov:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      EfsStorageClass: Enabled
+      ClusterAutoScaler: Disabled
+      EfsThroughputMode: provisioned
+      EfsProvisionedThroughputInMibps: 100
+    regions:
+    - us-east-2
   managed-node-group:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
@@ -98,7 +107,7 @@ tests:
       AvailabilityZones: $[taskcat_genaz_3]
       ALBIngressController: Enabled
     regions:
-      - us-east-2
+    - us-east-2
   fargate:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
@@ -106,4 +115,4 @@ tests:
       FargateNamespaces: kube-system
       FargateLabels: 'app.kubernetes.io/name=aws-cluster-autoscaler'
     regions:
-      - us-east-1
+    - us-east-1

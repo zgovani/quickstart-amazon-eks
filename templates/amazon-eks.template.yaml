@@ -227,8 +227,9 @@ Parameters:
     Default: bursting
   EfsProvisionedThroughputInMibps:
     Type: Number
-    MinValue: 0
-    Default: 0
+    MinValue: '0'
+    MaxValue: '1024'
+    Default: '0'
   HttpProxy:
     Type: String
     Default: ""
@@ -463,7 +464,7 @@ Resources:
         PrivateSubnet2ID: !If [2AZDeployment, !Ref PrivateSubnet2ID, !Ref "AWS::NoValue" ]
         PrivateSubnet3ID: !If [3AZDeployment, !Ref PrivateSubnet3ID, !Ref "AWS::NoValue" ]
         PerformanceMode: !Ref EfsPerformanceMode
-        ProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
+        EfsProvisionedThroughputInMibps: !Ref EfsProvisionedThroughputInMibps
         ThroughputMode: !Ref EfsThroughputMode
   LambdaZipsBucket:
     Type: AWS::S3::Bucket
