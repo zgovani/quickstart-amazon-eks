@@ -3,7 +3,6 @@ project:
   owner: quickstart-eng@amazon.com
   regions:
   - ap-east-1
-  - ap-northeast-1
   - ap-south-1
   - ap-southeast-1
   - eu-west-1
@@ -116,3 +115,8 @@ tests:
       FargateLabels: 'app.kubernetes.io/name=aws-cluster-autoscaler'
     regions:
     - us-east-1
+  enable-oidc:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ProvisionBastionHost: Disabled
+      IamOidcProvider: Enabled

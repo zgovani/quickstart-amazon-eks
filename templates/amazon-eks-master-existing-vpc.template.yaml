@@ -43,6 +43,7 @@ Metadata:
           - AdditionalEKSAdminUserArn
           - AdditionalEKSAdminRoleArn
           - KubernetesVersion
+          - IamOidcProvider
       - Label:
           default: AWS Quick Start configuration
         Parameters:
@@ -120,6 +121,8 @@ Metadata:
         default: Provision bastion host
       ALBIngressController:
         default: ALB ingress controller
+      IamOidcProvider:
+        default: IAM OIDC provider
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -351,7 +354,12 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
-    Description: "Set ths to Enabled to deploy the ALB ingress controller."
+    Description: "Set this to Enabled to deploy the ALB ingress controller."
+  IamOidcProvider:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
+    Description: Enables IAM roles for Kubernetes service accounts.
 Rules:
   EKSVersion_ManagedNodeGrou:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -418,6 +426,7 @@ Resources:
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         ProvisionALBIngressController: !Ref ALBIngressController
+        IamOidcProvider: !Ref IamOidcProvider
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn

@@ -59,6 +59,7 @@ Metadata:
           - EKSEncryptSecretsKmsKeyArn
           - FargateNamespaces
           - FargateLabels
+          - IamOidcProvider
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -161,6 +162,8 @@ Metadata:
         default: Fargate namespaces
       FargateLabels:
         default: Fargate labels
+      IamOidcProvider:
+        default: IAM OIDC provider
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -439,6 +442,11 @@ Parameters:
       [OPTIONAL] Comma separated list of key=value pod labels. Requires at least one Fargate namespace to be specified.
       For a pod to be run on Fargate, all labels must match and it must be running in a namespace included in
       FargateNamespaces.
+  IamOidcProvider:
+    Type: String
+    AllowedValues: [ "Enabled", "Disabled" ]
+    Default: "Disabled"
+    Description: Enables IAM roles for Kubernetes service accounts.
 Rules:
   LablesNeedNamespaces:
     RuleCondition: !Not
@@ -552,6 +560,7 @@ Resources:
         ProvisionALBIngressController: !Ref ALBIngressController
         FargateLabels: !Ref FargateLabels
         FargateNamespaces: !Ref FargateNamespaces
+        IamOidcProvider: !Ref IamOidcProvider
 Outputs:
   KubeManifestLambdaArn:
     Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
