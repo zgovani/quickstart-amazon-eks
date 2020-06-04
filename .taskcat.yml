@@ -54,6 +54,7 @@ tests:
       ClusterAutoScaler: Disabled
       EfsThroughputMode: provisioned
       EfsProvisionedThroughputInMibps: 100
+      ProvisionBastionHost: Disabled
     regions:
     - ap-east-1
   managed-node-group:
