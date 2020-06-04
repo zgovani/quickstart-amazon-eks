@@ -2,7 +2,6 @@ project:
   name: quickstart-amazon-eks
   owner: quickstart-eng@amazon.com
   regions:
-  - eu-west-2
   - eu-west-3
   - me-south-1
   - sa-east-1
@@ -111,6 +110,8 @@ tests:
     regions:
     - us-east-1
   enable-oidc:
+    regions:
+      - eu-west-2
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ProvisionBastionHost: Disabled
