@@ -45,19 +45,15 @@ Parameters:
     Type: String
   CleanupSecurityGroupDependenciesRoleArn:
     Type: String
+  CleanupLambdasRoleArn:
+    Type: String
   GetCallerArnRoleArn:
     Type: String
   CreateVpcRoleRoleArn:
     Type: String
   RegisterTypeRoleArn:
     Type: String
-  LogRoleArn:
-    Type: String
   NodeSGRoleArn:
-    Type: String
-  EksClusterResourceExecutionRoleArn:
-    Type: String
-  HelmExecutionRoleArn:
     Type: String
   FargateProfileRoleArn:
     Type: String
@@ -82,6 +78,7 @@ Resources:
       - functions/packages/KubeGet/lambda.zip
       - functions/packages/CleanupLoadBalancers/lambda.zip
       - functions/packages/CleanupSecurityGroupDependencies/lambda.zip
+      - functions/packages/CleanupLambdas/lambda.zip
       - functions/packages/kubectlLayer/lambda.zip
       - functions/packages/crhelperLayer/lambda.zip
       - functions/packages/GetCallerArn/lambda.zip
@@ -146,6 +143,19 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupLoadBalancers/lambda.zip'
+  CleanupLambdasLambda:
+    DependsOn: CopyZips
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Ref CleanupLambdasRoleArn
+      Runtime: python3.7
+      Timeout: 900
+      Layers: [!Ref CrhelperLayer]
+      Code:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/CleanupLambdas/lambda.zip'
   CreateVpcRoleLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
@@ -182,21 +192,57 @@ Resources:
     Type: Custom::RegisterType
     Properties:
       ServiceToken: !GetAtt RegisterTypeFunction.Arn
+      Version: "1.0.0-beta1"
       TypeName: "AWSQS::EKS::Cluster"
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
-      LogRoleArn: !Ref LogRoleArn
-      LogGroupName: "awsqs-eks-cluster-logs"
-      ExecutionRoleArn: !Ref EksClusterResourceExecutionRoleArn
+      IamPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - "ec2:*"
+          - "eks:CreateCluster"
+          - "eks:DeleteCluster"
+          - "eks:DescribeCluster"
+          - "eks:ListClusters"
+          - "eks:UpdateClusterConfig"
+          - "eks:UpdateClusterVersion"
+          - "iam:*"
+          - "kms:*"
+          - "lambda:*"
+          Resource: "*"
   RegisterHelmType:
     DependsOn: ArtifactCopyPolicy
     Type: Custom::RegisterType
     Properties:
       ServiceToken: !GetAtt RegisterTypeFunction.Arn
       TypeName: "AWSQS::Kubernetes::Helm"
+      Version: "1.0.0-beta1"
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip"
-      LogRoleArn: !Ref LogRoleArn
-      LogGroupName: "awsqs-kubernetes-helm-logs"
-      ExecutionRoleArn: !Ref HelmExecutionRoleArn
+      IamPolicy:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - "secretsmanager:GetSecretValue"
+          - "kms:Decrypt"
+          - "eks:DescribeCluster"
+          - "s3:GetObject"
+          - "sts:AssumeRole"
+          - "iam:PassRole"
+          - "iam:ListRolePolicies"
+          - "iam:ListAttachedRolePolicies"
+          - "iam:GetRole"
+          - "iam:GetPolicy"
+          - "iam:GetPolicyVersion"
+          - "ec2:CreateNetworkInterface"
+          - "ec2:DeleteNetworkInterface"
+          - "ec2:Describe*"
+          - "logs:CreateLogGroup"
+          - "logs:CreateLogStream"
+          - "logs:PutLogEvents"
+          - "lambda:*"
+          Resource: "*"
   CleanupSecurityGroupDependenciesLambda:
     DependsOn: CopyZips
     Type: "AWS::Lambda::Function"
@@ -391,6 +437,8 @@ Outputs:
     Value: !GetAtt KubeGetLambda.Arn
   CleanupLoadBalancersLambdaArn:
     Value: !GetAtt CleanupLoadBalancersLambda.Arn
+  CleanupLambdasLambdaArn:
+    Value: !GetAtt CleanupLambdasLambda.Arn
   CleanupSecurityGroupDependenciesLambdaArn:
     Value: !GetAtt CleanupSecurityGroupDependenciesLambda.Arn
   GetCallerArnLambdaArn:

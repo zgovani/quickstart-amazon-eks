@@ -31,8 +31,6 @@ Parameters:
     Default: ""
   FunctionRoleArn:
     Type: String
-  HelmExecutionRoleArn:
-    Type: String
   EKSPublicAccessCIDRs:
     Type: List<String>
     Default: 0.0.0.0/0
@@ -116,8 +114,8 @@ Resources:
           - Arn: !Ref FunctionRoleArn
             Username: !Ref FunctionRoleArn
             Groups: [ 'system:masters' ]
-          - Arn: !Ref HelmExecutionRoleArn
-            Username: !Ref HelmExecutionRoleArn
+          - Arn: !Sub "arn:aws:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
+            Username: !Sub "arn:aws:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
             Groups: [ 'system:masters' ]
           - !If
             - BastionRole

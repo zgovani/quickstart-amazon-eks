@@ -319,6 +319,34 @@ Resources:
                   - 'ec2:DetachNetworkInterface'
                 Effect: Allow
                 Resource: "*"
+  CleanupLambdasRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: [lambda.amazonaws.com]
+        Version: '2012-10-17'
+      Path: /
+      Policies:
+        - PolicyName: LambdaRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Effect: Allow
+                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
+              - Action:
+                  - 'lambda:ListFunctions'
+                  - 'lambda:UpdateFunctionConfiguration'
+                  - 'lambda:DeleteFunction'
+                Effect: Allow
+                Resource: "*"
   GetCallerArnRole:
     Type: AWS::IAM::Role
     Properties:
@@ -346,34 +374,6 @@ Resources:
                   - 'cloudtrail:LookupEvents'
                 Effect: Allow
                 Resource: "*"
-  LogDeliveryRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-              - cloudformation.amazonaws.com
-              - resources.cloudformation.amazonaws.com
-            Action: sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: ResourceTypePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:DescribeLogGroups"
-                  - "logs:DescribeLogStreams"
-                  - "logs:PutLogEvents"
-                  - "cloudwatch:ListMetrics"
-                  - "cloudwatch:PutMetricData"
-                Resource: "*"
   RegisterTypeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -396,76 +396,15 @@ Resources:
                 Action:
                   - "cloudformation:*"
                   - "iam:PassRole"
-                Resource: "*"
-  ExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      MaxSessionDuration: 8400
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: resources.cloudformation.amazonaws.com
-            Action: sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: ResourceTypePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "ec2:*"
-                  - "eks:CreateCluster"
-                  - "eks:DeleteCluster"
-                  - "eks:DescribeCluster"
-                  - "eks:ListClusters"
-                  - "eks:UpdateClusterConfig"
-                  - "eks:UpdateClusterVersion"
-                  - "iam:*"
-                  - "kms:*"
-                  - "lambda:*"
-                Resource: "*"
-  HelmExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      MaxSessionDuration: 8400
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - "lambda.amazonaws.com"
-                - "resources.cloudformation.amazonaws.com"
-            Action: sts:AssumeRole
-      Path: "/"
-      Policies:
-        - PolicyName: ResourceTypePolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "secretsmanager:GetSecretValue"
-                  - "kms:Decrypt"
-                  - "eks:DescribeCluster"
-                  - "s3:GetObject"
-                  - "sts:AssumeRole"
-                  - "iam:PassRole"
-                  - "iam:ListRolePolicies"
-                  - "iam:ListAttachedRolePolicies"
-                  - "iam:GetRole"
-                  - "iam:GetPolicy"
-                  - "iam:GetPolicyVersion"
-                  - "ec2:CreateNetworkInterface"
-                  - "ec2:DeleteNetworkInterface"
-                  - "ec2:Describe*"
-                  - "logs:CreateLogGroup"
-                  - "logs:CreateLogStream"
-                  - "logs:PutLogEvents"
-                  - "lambda:*"
+                  - "iam:CreateRole"
+                  - "iam:CreatePolicy"
+                  - "iam:ListPolicyVersions"
+                  - "iam:DeletePolicyVersion"
+                  - "iam:CreatePolicyVersion"
+                  - "iam:AttachRolePolicy"
+                  - "ssm:GetParameter"
+                  - "ssm:PutParameter"
+                  - "sts:GetCallerIdentity"
                 Resource: "*"
   NodeSGRole:
     Type: AWS::IAM::Role
@@ -548,18 +487,14 @@ Outputs:
     Value: !GetAtt CleanupLoadBalancersRole.Arn
   CleanupSecurityGroupDependenciesRoleArn:
     Value: !GetAtt CleanupSecurityGroupDependenciesRole.Arn
+  CleanupLambdasRoleArn:
+    Value: !GetAtt CleanupLambdasRole.Arn
   GetCallerArnRoleArn:
     Value: !GetAtt GetCallerArnRole.Arn
   CreateVpcRoleRoleArn:
     Value: !GetAtt CreateVpcRoleRole.Arn
-  ExecutionRoleArn:
-    Value: !GetAtt ExecutionRole.Arn
-  HelmExecutionRoleArn:
-    Value: !GetAtt HelmExecutionRole.Arn
   RegisterTypeRoleArn:
     Value: !GetAtt RegisterTypeRole.Arn
-  LogDeliveryRoleArn:
-    Value: !GetAtt LogDeliveryRole.Arn
   NodeSGRoleArn:
     Value: !GetAtt NodeSGRole.Arn
   FargateExecutionRoleArn:

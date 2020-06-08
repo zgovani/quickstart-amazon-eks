@@ -34,7 +34,7 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ClusterAutoScaler: Enabled
-      ProvisionBastionHost: Disabled
+      ProvisionBastionHost: Enabled
     regions:
     - eu-central-1
   efs:
