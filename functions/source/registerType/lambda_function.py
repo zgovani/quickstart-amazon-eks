@@ -1,13 +1,86 @@
-import boto3
 import logging
 from crhelper import CfnResource
 from time import sleep
 import json
-import random
+import boto3
+from semantic_version import Version
+
+execution_trust_policy = {
+    'Version': '2012-10-17',
+    'Statement': [
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Service': ['resources.cloudformation.amazonaws.com', 'lambda.amazonaws.com']
+            },
+            'Action': 'sts:AssumeRole'
+        }
+    ]
+}
+log_trust_policy = {
+    'Version': '2012-10-17',
+    'Statement': [
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Service': ['cloudformation.amazonaws.com', 'resources.cloudformation.amazonaws.com']
+            },
+            'Action': 'sts:AssumeRole'
+        }
+    ]
+}
+log_policy = {
+    'Version': '2012-10-17',
+    'Statement': [
+        {
+            'Effect': 'Allow',
+            'Action': ['logs:CreateLogGroup', 'logs:CreateLogStream', 'logs:DescribeLogGroups',
+                       'logs:DescribeLogStreams', 'logs:PutLogEvents', 'cloudwatch:ListMetrics',
+                       'cloudwatch:PutMetricData'],
+            'Resource': '*'
+        }
+    ]
+}
 
 logger = logging.getLogger(__name__)
 helper = CfnResource(json_logging=True, log_level='DEBUG')
 cfn = boto3.client('cloudformation')
+ssm = boto3.client('ssm')
+iam = boto3.client("iam")
+sts = boto3.client("sts")
+account_id = sts.get_caller_identity()['Account']
+
+
+def put_role(role_name, policy, trust_policy):
+    try:
+        response = iam.create_role(Path='/', RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+        role_arn = response['Role']['Arn']
+    except iam.exceptions.EntityAlreadyExistsException:
+        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+    try:
+        response = iam.create_policy(Path='/', PolicyName=role_name, PolicyDocument=json.dumps(policy))
+        arn = response['Policy']['Arn']
+    except iam.exceptions.EntityAlreadyExistsException:
+
+        arn = f"arn:aws:iam::{account_id}:policy/{role_name}"
+        versions = iam.list_policy_versions(PolicyArn=arn)['Versions']
+        if len(versions) >= 5:
+            oldest = [v for v in versions if not v['IsDefaultVersion']][-1]['VersionId']
+            iam.delete_policy_version(PolicyArn=arn, VersionId=oldest)
+        iam.create_policy_version(PolicyArn=arn, PolicyDocument=json.dumps(policy), SetAsDefault=True)
+    iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+    return role_arn
+
+
+def get_current_version(type_name):
+    try:
+        return Version(ssm.get_parameter(Name=f"/cfn-registry/{type_name}/version")['Parameter']['Value'])
+    except ssm.exceptions.ParameterNotFound:
+        return Version('0.0.0')
+
+
+def set_version(type_name, type_version):
+    ssm.put_parameter(Name=f"/cfn-registry/{type_name}/version", Value=type_version, Type='String', Overwrite=True)
 
 
 def stabilize(token):
@@ -26,15 +99,26 @@ def stabilize(token):
 @helper.update
 def register(event, _):
     logger.error(f"event: {json.dumps(event)}")
+    type_name = event['ResourceProperties']['TypeName'].replace("::", "-").lower()
+    version = Version(event['ResourceProperties'].get('Version', '0.0.0'))
+    if version != Version('0.0.0') and version <= get_current_version(type_name):
+        print("version already registered is greater than this version, leaving as is.")
+        try:
+            arn = cfn.describe_type(Type='RESOURCE', TypeName="AWSQS::Kubernetes::Helm")['Arn']
+            return arn
+        except cfn.exceptions.TypeNotFoundException:
+            print("resource missing, re-registering...")
+    execution_role_arn = put_role(type_name, event['ResourceProperties']['IamPolicy'], execution_trust_policy)
+    log_role_arn = put_role('CloudFormationRegistryResourceLogRole', log_policy, log_trust_policy)
     kwargs = {
        "Type": 'RESOURCE',
        "TypeName": event['ResourceProperties']['TypeName'],
        "SchemaHandlerPackage": event['ResourceProperties']['SchemaHandlerPackage'],
         "LoggingConfig": {
-            "LogRoleArn": event['ResourceProperties']['LogRoleArn'],
-            "LogGroupName": event['ResourceProperties']['LogGroupName']
+            "LogRoleArn": log_role_arn,
+            "LogGroupName": f"/cloudformation/registry/{type_name}"
         },
-        "ExecutionRoleArn": event['ResourceProperties']['ExecutionRoleArn']
+        "ExecutionRoleArn": execution_role_arn
     }
     retries = 3
     while True:
@@ -56,6 +140,7 @@ def register(event, _):
             sleep(60)
     if version_arn:
         cfn.set_type_default_version(Arn=version_arn)
+        set_version(type_name, event['ResourceProperties'].get('Version', '0.0.0'))
     return version_arn
 
 
@@ -76,35 +161,8 @@ def delete_oldest(name):
 
 @helper.delete
 def delete(event, _):
-    if not event['PhysicalResourceId'].startswith("arn:"):
-        print("no valid arn to delete")
-        return
-    retries = 0
-    while True:
-        try:
-            try:
-                cfn.deregister_type(Arn=event['PhysicalResourceId'])
-            except cfn.exceptions.CFNRegistryException as e:
-                if "is the default version" not in str(e):
-                    raise
-                versions = cfn.list_type_versions(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['TypeVersionSummaries']
-                if len(versions) > 1:
-                    versions = [v['Arn'] for v in versions if v['Arn'] != event['PhysicalResourceId']]
-                    versions.sort(reverse=True)
-                    cfn.set_type_default_version(Arn=versions[0])
-                    cfn.deregister_type(Arn=event['PhysicalResourceId'])
-                else:
-                    cfn.deregister_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])
-            return
-        except cfn.exceptions.TypeNotFoundException:
-            print("type already deleted...")
-            return
-        except Exception as e:
-            retries += 1
-            if retries > 5:
-                raise
-            logger.error(e, exc_info=True)
-            sleep(random.choice([1, 2, 3, 4, 5]))
+    # We don't know whether other stacks are using the resource type, so we retain the resource after delete.
+    return
 
 
 def lambda_handler(event, context):
