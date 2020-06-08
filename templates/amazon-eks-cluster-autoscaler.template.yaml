@@ -18,6 +18,8 @@ Parameters:
 #       deployed into. See...
 #       https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler#releases
 #       https://github.com/kubernetes/autoscaler/releases
+Conditions:
+  is16: !Equals [ !Ref KubernetesVersion, "1.16" ]
 Mappings:
   K8sVersionMap:
     "1.13":
@@ -27,7 +29,7 @@ Mappings:
     "1.15":
       ImageTag: v1.15.5
     "1.16":
-      ImageTag: v1.16.8
+      ImageTag: v1.16.5
 Resources:
   # Policy to apply to NodeInstanceRole
   ClusterAutoScalerPolicy:
@@ -68,6 +70,7 @@ Resources:
           - K8sVersionMap
           - !Ref KubernetesVersion
           - ImageTag
+        image.repository: !If [ is16, us.gcr.io/k8s-artifacts-prod/autoscaling/cluster-autoscaler, k8s.gcr.io/cluster-autoscaler ]
         rbac.create: true
         rbac.pspEnabled: true
         autoDiscovery.clusterName: !Ref EksClusterName
