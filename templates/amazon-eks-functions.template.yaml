@@ -53,6 +53,8 @@ Parameters:
     Type: String
   RegisterTypeRoleArn:
     Type: String
+  RegisterCustomResourceRoleArn:
+    Type: String
   NodeSGRoleArn:
     Type: String
   FargateProfileRoleArn:
@@ -187,6 +189,19 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/registerType/lambda.zip'
+  RegisterCustomResourceFunction:
+    DependsOn: CopyZips
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: lambda_function.lambda_handler
+      MemorySize: 128
+      Role: !Ref RegisterCustomResourceRoleArn
+      Layers: [!Ref CrhelperLayer]
+      Runtime: python3.7
+      Timeout: 900
+      Code:
+        S3Bucket: !Ref LambdaZipsBucketName
+        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/registerCustomResource/lambda.zip'
   RegisterEksClusterType:
     DependsOn: ArtifactCopyPolicy
     Type: Custom::RegisterType

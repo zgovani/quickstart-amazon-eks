@@ -406,6 +406,38 @@ Resources:
                   - "ssm:PutParameter"
                   - "sts:GetCallerIdentity"
                 Resource: "*"
+  RegisterCustomResourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ResourceTypePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:*"
+                  - "iam:PassRole"
+                  - "iam:CreateRole"
+                  - "iam:CreatePolicy"
+                  - "iam:ListPolicyVersions"
+                  - "iam:DeletePolicyVersion"
+                  - "iam:CreatePolicyVersion"
+                  - "iam:AttachRolePolicy"
+                  - "ssm:GetParameter"
+                  - "ssm:PutParameter"
+                  - "sts:GetCallerIdentity"
+                Resource: "*"
   NodeSGRole:
     Type: AWS::IAM::Role
     Properties:
@@ -495,6 +527,8 @@ Outputs:
     Value: !GetAtt CreateVpcRoleRole.Arn
   RegisterTypeRoleArn:
     Value: !GetAtt RegisterTypeRole.Arn
+  RegisterCustomResourceRoleArn:
+    Value: !GetAtt RegisterCustomResourceRole.Arn
   NodeSGRoleArn:
     Value: !GetAtt NodeSGRole.Arn
   FargateExecutionRoleArn:

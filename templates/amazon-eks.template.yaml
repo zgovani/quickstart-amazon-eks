@@ -417,6 +417,7 @@ Resources:
         GetCallerArnRoleArn: !GetAtt IamStack.Outputs.GetCallerArnRoleArn
         CreateVpcRoleRoleArn: !GetAtt IamStack.Outputs.CreateVpcRoleRoleArn
         RegisterTypeRoleArn: !GetAtt IamStack.Outputs.RegisterTypeRoleArn
+        RegisterCustomResourceRoleArn: !GetAtt IamStack.Outputs.RegisterCustomResourceRoleArn
         NodeSGRoleArn: !GetAtt IamStack.Outputs.NodeSGRoleArn
         FargateProfileRoleArn: !GetAtt IamStack.Outputs.FargateProfileRoleArn
         EKSSubnetIds: !If
