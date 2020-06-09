@@ -5,6 +5,9 @@ project:
   - eu-west-3
   - me-south-1
   - sa-east-1
+  - us-east-1
+  - us-east-2
+  - us-west-2
   template: templates/amazon-eks-master.template.yaml
   parameters:
     RemoteAccessCIDR: 10.0.0.0/16
@@ -27,9 +30,12 @@ tests:
       - ap-northeast-2
   with-bastion:
     parameters:
-      AvailabilityZones: $[taskcat_genaz_3]
+      AvailabilityZones: $[taskcat_genaz_2]
+      NumberOfAZs: "2"
+      ProvisionBastionHost: Enabled
     regions:
       - ap-southeast-1
+      - cn-north-1
   cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
@@ -47,6 +53,7 @@ tests:
       ProvisionBastionHost: Disabled
     regions:
     - eu-north-1
+    - us-west-2
   efs-prov:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
@@ -72,13 +79,16 @@ tests:
       MonitoringStack: Prometheus + Grafana
     regions:
     - ap-southeast-2
+    - us-west-2
   2az:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
       NumberOfAZs: "2"
+      ProvisionBastionHost: Disabled
     regions:
     - ca-central-1
     - cn-north-1
+    - cn-northwest-1
   no-logging:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
