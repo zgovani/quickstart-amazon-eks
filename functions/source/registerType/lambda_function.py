@@ -4,6 +4,7 @@ from time import sleep
 import json
 import boto3
 from semantic_version import Version
+from random import choice
 
 execution_trust_policy = {
     'Version': '2012-10-17',
@@ -52,25 +53,34 @@ account_id = sts.get_caller_identity()['Account']
 
 
 def put_role(role_name, policy, trust_policy):
-    try:
-        response = iam.create_role(Path='/', RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
-        role_arn = response['Role']['Arn']
-    except iam.exceptions.EntityAlreadyExistsException:
-        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
-    try:
-        response = iam.create_policy(Path='/', PolicyName=role_name, PolicyDocument=json.dumps(policy))
-        arn = response['Policy']['Arn']
-    except iam.exceptions.EntityAlreadyExistsException:
+    retries = 5
+    while True:
+        try:
+            try:
+                response = iam.create_role(Path='/', RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
+                role_arn = response['Role']['Arn']
+            except iam.exceptions.EntityAlreadyExistsException:
+                role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+            try:
+                response = iam.create_policy(Path='/', PolicyName=role_name, PolicyDocument=json.dumps(policy))
+                arn = response['Policy']['Arn']
+            except iam.exceptions.EntityAlreadyExistsException:
 
-        arn = f"arn:aws:iam::{account_id}:policy/{role_name}"
-        versions = iam.list_policy_versions(PolicyArn=arn)['Versions']
-        if len(versions) >= 5:
-            oldest = [v for v in versions if not v['IsDefaultVersion']][-1]['VersionId']
-            iam.delete_policy_version(PolicyArn=arn, VersionId=oldest)
-        iam.create_policy_version(PolicyArn=arn, PolicyDocument=json.dumps(policy), SetAsDefault=True)
-    iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
-    return role_arn
-
+                arn = f"arn:aws:iam::{account_id}:policy/{role_name}"
+                versions = iam.list_policy_versions(PolicyArn=arn)['Versions']
+                if len(versions) >= 5:
+                    oldest = [v for v in versions if not v['IsDefaultVersion']][-1]['VersionId']
+                    try:
+                        iam.delete_policy_version(PolicyArn=arn, VersionId=oldest)
+                iam.create_policy_version(PolicyArn=arn, PolicyDocument=json.dumps(policy), SetAsDefault=True)
+            iam.attach_role_policy(RoleName=role_name, PolicyArn=arn)
+            return role_arn
+        except Exception as e:
+            print(e)
+            retries -= 1
+            if retries < 1:
+                raise
+            sleep(choice(range(1,10)))
 
 def get_current_version(type_name):
     try:
