@@ -192,7 +192,7 @@ Resources:
     Type: Custom::RegisterType
     Properties:
       ServiceToken: !GetAtt RegisterTypeFunction.Arn
-      Version: "1.0.0-beta1"
+      Version: "1.0.0-beta2"
       TypeName: "AWSQS::EKS::Cluster"
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
       IamPolicy:
@@ -217,7 +217,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt RegisterTypeFunction.Arn
       TypeName: "AWSQS::Kubernetes::Helm"
-      Version: "1.0.0-beta1"
+      Version: "1.0.0-beta2"
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip"
       IamPolicy:
         Version: '2012-10-17'
