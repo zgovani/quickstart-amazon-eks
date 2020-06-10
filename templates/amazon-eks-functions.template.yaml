@@ -210,7 +210,7 @@ Resources:
     Type: Custom::RegisterType
     Properties:
       ServiceToken: !GetAtt RegisterTypeFunction.Arn
-      Version: "1.0.0-beta2"
+      Version: "1.0.0-beta3"
       TypeName: "AWSQS::EKS::Cluster"
       SchemaHandlerPackage: !Sub "s3://${LambdaZipsBucketName}/${QSS3KeyPrefix}functions/packages/EksClusterResource/awsqs-eks-cluster.zip"
       IamPolicy:
