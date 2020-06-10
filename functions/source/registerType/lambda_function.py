@@ -112,11 +112,14 @@ def register(event, _):
     version = Version(event['ResourceProperties'].get('Version', '0.0.0'))
     if version != Version('0.0.0') and version <= get_current_version(type_name):
         print("version already registered is greater than this version, leaving as is.")
-        try:
-            arn = cfn.describe_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['Arn']
-            return arn
-        except cfn.exceptions.TypeNotFoundException:
+        if not cfn.list_type_versions(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['TypeVersionSummaries']:
             print("resource missing, re-registering...")
+        else:
+            try:
+                arn = cfn.describe_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['Arn']
+                return arn
+            except cfn.exceptions.TypeNotFoundException:
+                print("resource missing, re-registering...")
     execution_role_arn = put_role(type_name, event['ResourceProperties']['IamPolicy'], execution_trust_policy)
     log_role_arn = put_role('CloudFormationRegistryResourceLogRole', log_policy, log_trust_policy)
     kwargs = {
