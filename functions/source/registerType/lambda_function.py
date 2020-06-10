@@ -113,7 +113,7 @@ def register(event, _):
     if version != Version('0.0.0') and version <= get_current_version(type_name):
         print("version already registered is greater than this version, leaving as is.")
         try:
-            arn = cfn.describe_type(Type='RESOURCE', TypeName="AWSQS::Kubernetes::Helm")['Arn']
+            arn = cfn.describe_type(Type='RESOURCE', TypeName=event['ResourceProperties']['TypeName'])['Arn']
             return arn
         except cfn.exceptions.TypeNotFoundException:
             print("resource missing, re-registering...")
