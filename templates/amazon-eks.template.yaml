@@ -239,6 +239,10 @@ Parameters:
   FargateLabels:
     Type: String
     Default: ""
+  EKSClusterName:
+    Type: String
+    Default: ""
+    Description: "[OPTIONAL] Name for the EKS cluster, if left blank one will be auto-generated."
 Conditions:
   EnableFargate: !Not [!Equals [ !Ref FargateNamespaces, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
@@ -258,6 +262,7 @@ Conditions:
   EnableMonitoringPrometheusGrafana: !Equals [!Ref 'ProvisionMonitoringStack', 'Prometheus + Grafana']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  GenerateClusterName: !Equals [!Ref 'EKSClusterName', '']
 Resources:
   BastionEksPermissions:
     Condition: EnableBastion
@@ -358,7 +363,6 @@ Resources:
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         QSS3BucketRegion: !Ref QSS3BucketRegion
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
-        KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
         NodeSGFunctionArn: !GetAtt FunctionStack.Outputs.NodeSGFunctionArn
   BastionSShToNodes:
     Condition: EnableBastion
@@ -427,6 +431,7 @@ Resources:
             - 2AZDeployment
             - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
             - !Ref PrivateSubnet1ID
+        EKSClusterName: !If [GenerateClusterName, !Ref GenerateName, !Ref EKSClusterName]
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
     Metadata:
@@ -537,6 +542,7 @@ Resources:
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
         IamOidcProvider: !If [ EnableALBIngressController, 'Enabled', !Ref IamOidcProvider ]
+        EKSClusterName: !If [GenerateClusterName, !Ref GenerateName, !Ref EKSClusterName]
   PrometheusStack:
     Metadata:
       DependsOn:
@@ -602,14 +608,44 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        KubeManifestLambdaArn: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
         OIDCIssuerURLWithoutProtocol:  !Join [ '', !Split [ 'https://', !GetAtt EKSControlPlane.Outputs.OIDCIssuerURL ] ]
         ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+  GenerateNameFunction:
+    Condition: GenerateClusterName
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Copies objects from a source S3 bucket to a destination
+      Handler: index.handler
+      Runtime: python3.7
+      Role: !GetAtt IamStack.Outputs.CopyZipsRoleArn
+      Timeout: 900
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import logging
+          from random import choice
+          from string import ascii_uppercase, digits
+          logger = logging.getLogger(__name__)
+          def handler(event, context):
+              logger.debug(event)
+              status = cfnresponse.SUCCESS
+              pid = None
+              try:
+                  if event['RequestType'] == 'Create':
+                      pid = 'EKS-' + ''.join((choice(ascii_uppercase + digits) for i in range(8)))
+                  else:
+                      pid = event['PhysicalResourceId']
+              except Exception:
+                  logging.error('Unhandled exception', exc_info=True)
+                  status = cfnresponse.FAILED
+              finally:
+                  cfnresponse.send(event, context, status, {}, pid)
+  GenerateName:
+    Condition: GenerateClusterName
+    Type: Custom::GenerateName
+    Properties:
+      ServiceToken: !GetAtt 'GenerateNameFunction.Arn'
 Outputs:
-  KubeManifestLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.KubeManifestLambdaArn
-  KubeGetLambdaArn:
-    Value: !GetAtt FunctionStack.Outputs.KubeGetLambdaArn
   BastionIP:
     Value: !If
       - EnableBastion

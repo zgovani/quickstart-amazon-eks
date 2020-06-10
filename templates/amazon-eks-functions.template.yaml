@@ -61,6 +61,8 @@ Parameters:
     Type: String
   EKSSubnetIds:
     Type: List<String>
+  EKSClusterName:
+    Type: String
 Conditions:
   CreateDeleteBucketContentsLambda: !Equals
     - !Ref 'DeleteLambdaZipsBucketContents'
@@ -86,6 +88,7 @@ Resources:
       - functions/packages/GetCallerArn/lambda.zip
       - functions/packages/createVpcRole/lambda.zip
       - functions/packages/registerType/lambda.zip
+      - functions/packages/registerCustomResource/lambda.zip
       - functions/packages/EksClusterResource/awsqs-eks-cluster.zip
       - functions/packages/HelmReleaseResource/awsqs-kubernetes-helm.zip
       - functions/packages/awscliLayer/lambda.zip
@@ -296,6 +299,7 @@ Resources:
     DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub "EKS-QuickStart-KubeManifest-${EKSClusterName}"
       Handler: lambda_function.lambda_handler
       MemorySize: 256
       Role: !Ref KubernetesAdminRoleArn
@@ -313,6 +317,7 @@ Resources:
     DependsOn: [ CopyZips, LambdaSGCleanup ]
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub "EKS-QuickStart-KubeGet-${EKSClusterName}"
       Handler: lambda_function.lambda_handler
       MemorySize: 256
       Role: !Ref KubernetesAdminRoleArn
@@ -446,10 +451,6 @@ Resources:
 Outputs:
   DeleteBucketContentsLambdaArn:
     Value: !If [ CreateDeleteBucketContentsLambda, !GetAtt DeleteBucketContentsLambda.Arn, "" ]
-  KubeManifestLambdaArn:
-    Value: !GetAtt KubeManifestLambda.Arn
-  KubeGetLambdaArn:
-    Value: !GetAtt KubeGetLambda.Arn
   CleanupLoadBalancersLambdaArn:
     Value: !GetAtt CleanupLoadBalancersLambda.Arn
   CleanupLambdasLambdaArn:

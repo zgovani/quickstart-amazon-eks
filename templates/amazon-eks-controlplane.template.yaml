@@ -56,6 +56,8 @@ Parameters:
     Type: String
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
+  EKSClusterName:
+    Type: String
 Conditions:
   AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, "" ] ]
   AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, "" ] ]
@@ -91,6 +93,7 @@ Resources:
   EKS:
     Type: "AWSQS::EKS::Cluster"
     Properties:
+      Name: !Ref EKSClusterName
       ResourcesVpcConfig:
         SecurityGroupIds: !Ref SecurityGroupIds
         SubnetIds: !Ref SubnetIds

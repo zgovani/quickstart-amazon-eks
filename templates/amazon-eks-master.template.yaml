@@ -40,6 +40,7 @@ Metadata:
       - Label:
           default: Amazon EKS configuration
         Parameters:
+          - EKSClusterName
           - NodeInstanceType
           - NumberOfNodes
           - MaxNumberOfNodes
@@ -164,6 +165,8 @@ Metadata:
         default: Fargate labels
       IamOidcProvider:
         default: IAM OIDC provider
+      EKSClusterName:
+        default: EKS cluster name
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -447,6 +450,10 @@ Parameters:
     AllowedValues: [ "Enabled", "Disabled" ]
     Default: "Disabled"
     Description: Enables IAM roles for Kubernetes service accounts.
+  EKSClusterName:
+    Type: String
+    Default: ""
+    Description: "[OPTIONAL] Name for the EKS cluster, if left blank one will be auto-generated. Must be unique within the AWS Region."
 Rules:
   LablesNeedNamespaces:
     RuleCondition: !Not
@@ -561,11 +568,8 @@ Resources:
         FargateLabels: !Ref FargateLabels
         FargateNamespaces: !Ref FargateNamespaces
         IamOidcProvider: !Ref IamOidcProvider
+        EKSClusterName: !Ref EKSClusterName
 Outputs:
-  KubeManifestLambdaArn:
-    Value: !GetAtt EKSStack.Outputs.KubeManifestLambdaArn
-  KubeGetLambdaArn:
-    Value: !GetAtt EKSStack.Outputs.KubeGetLambdaArn
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName
   BastionIP:

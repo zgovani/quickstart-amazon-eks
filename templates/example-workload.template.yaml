@@ -1,8 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: "deploy an example workload into an existing kubernetes cluster"
 Parameters:
-  KubeManifestLambdaArn:
-    Type: String
   KubeClusterName:
     Type: String
   NodeInstanceProfile:
@@ -18,7 +16,7 @@ Resources:
     Version: '1.0'
     Properties:
       # The lambda function that executes the manifest against the cluster. This is created in one of the parent stacks
-      ServiceToken: !Ref KubeManifestLambdaArn
+      ServiceToken: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:EKS-QuickStart-KubeManifest-${KubeClusterName}"
       ClusterName: !Ref KubeClusterName
       # Kubernetes manifest URL
       Url: https://k8s.io/examples/controllers/nginx-deployment.yaml
@@ -36,7 +34,7 @@ Resources:
     Version: '1.0'
     Properties:
       # The lambda function that executes the manifest against the cluster. This is created in one of the parent stacks
-      ServiceToken: !Ref KubeManifestLambdaArn
+      ServiceToken: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:EKS-QuickStart-KubeManifest-${KubeClusterName}"
       ClusterName: !Ref KubeClusterName
       # Kubernetes manifest
       Manifest:

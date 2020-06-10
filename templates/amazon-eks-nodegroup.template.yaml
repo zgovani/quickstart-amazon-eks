@@ -43,7 +43,6 @@ Metadata:
           - QSS3KeyPrefix
           - QSS3BucketRegion
           - CleanupSecurityGroupDependenciesLambdaArn
-          - KubeManifestLambdaArn
           - NodeSGFunctionArn
     ParameterLabels:
       QSS3BucketRegion:
@@ -100,8 +99,6 @@ Metadata:
         default: Custom AMI id
       HttpProxy:
         default: HTTP proxy
-      KubeManifestLambdaArn:
-        default: Kubernetes manifest Lambda ARN
       TargetGroupARNs:
         default: Target Group ARN's
       NodeSGFunctionArn:
@@ -343,10 +340,6 @@ Parameters:
     Type: String
     Default: ""
     Description: "[OPTIONAL] Specify the host name for an HTTP proxy to use for outbound internet access."
-  KubeManifestLambdaArn:
-    Type: String
-    Default: ""
-    Description: "ARN for lambda function used by the KubeManifest custom resource."
   NodeSGFunctionArn:
     Type: String
     Description: Function ARN to fetch node Security Group for managed node groups
@@ -887,7 +880,7 @@ Resources:
     Type: "Custom::KubeManifest"
     Version: '1.0'
     Properties:
-      ServiceToken: !Ref KubeManifestLambdaArn
+      ServiceToken: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:EKS-QuickStart-KubeManifest-${EKSControlPlane}"
       HttpProxy: !Ref HttpProxy
       VpcId: !Ref VPCID
   NodeLaunchConfig:

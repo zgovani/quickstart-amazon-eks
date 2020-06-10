@@ -54,7 +54,6 @@ Resources:
         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-        KubeManifestLambdaArn: !GetAtt KubeManifestLambda.Arn
         KubeClusterName: !Ref KubeClusterName
         NodeInstanceProfile: !Ref NodeInstanceProfile
   CopyZips:
