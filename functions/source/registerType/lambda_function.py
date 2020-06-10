@@ -49,7 +49,9 @@ cfn = boto3.client('cloudformation')
 ssm = boto3.client('ssm')
 iam = boto3.client("iam")
 sts = boto3.client("sts")
-account_id = sts.get_caller_identity()['Account']
+identity = sts.get_caller_identity()
+account_id = identity['Account']
+partition = identity['Arn'].split(':')[1]
 
 
 def put_role(role_name, policy, trust_policy):
@@ -60,13 +62,13 @@ def put_role(role_name, policy, trust_policy):
                 response = iam.create_role(Path='/', RoleName=role_name, AssumeRolePolicyDocument=json.dumps(trust_policy))
                 role_arn = response['Role']['Arn']
             except iam.exceptions.EntityAlreadyExistsException:
-                role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+                role_arn = f"arn:{partition}:iam::{account_id}:role/{role_name}"
             try:
                 response = iam.create_policy(Path='/', PolicyName=role_name, PolicyDocument=json.dumps(policy))
                 arn = response['Policy']['Arn']
             except iam.exceptions.EntityAlreadyExistsException:
 
-                arn = f"arn:aws:iam::{account_id}:policy/{role_name}"
+                arn = f"arn:{partition}:iam::{account_id}:policy/{role_name}"
                 versions = iam.list_policy_versions(PolicyArn=arn)['Versions']
                 if len(versions) >= 5:
                     oldest = [v for v in versions if not v['IsDefaultVersion']][-1]['VersionId']

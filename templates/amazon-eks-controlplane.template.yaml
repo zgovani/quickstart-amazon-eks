@@ -117,8 +117,8 @@ Resources:
           - Arn: !Ref FunctionRoleArn
             Username: !Ref FunctionRoleArn
             Groups: [ 'system:masters' ]
-          - Arn: !Sub "arn:aws:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
-            Username: !Sub "arn:aws:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
+          - Arn: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
+            Username: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"
             Groups: [ 'system:masters' ]
           - !If
             - BastionRole

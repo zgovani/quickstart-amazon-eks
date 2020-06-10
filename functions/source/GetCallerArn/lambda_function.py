@@ -51,7 +51,7 @@ def get_caller_arn(stack_id):
 
 def sts_to_role(sts_arn):
     logger.debug(f"arn from cloudtrail: {sts_arn}")
-    if not sts_arn.startswith('arn:aws:sts::') or not sts_arn.split('/')[0].endswith('assumed-role'):
+    if ':sts::' not in sts_arn or not sts_arn.split('/')[0].endswith('assumed-role'):
         return sts_arn
     if len(sts_arn.split('/')) < 2:
         logger.error(f"failed to parse calling arn {sts_arn}")
