@@ -2,6 +2,7 @@ project:
   name: quickstart-amazon-eks
   owner: quickstart-eng@amazon.com
   regions:
+  - eu-north-1
   - eu-west-3
   - me-south-1
   - sa-east-1
@@ -13,7 +14,6 @@ project:
     RemoteAccessCIDR: 10.0.0.0/16
     QSS3BucketName: $[taskcat_autobucket]
     QSS3BucketRegion: $[taskcat_current_region]
-    BastionHostHelmVersion: Helm3
   lambda_source_path: functions/source
   lambda_zip_path: functions/packages
 tests:
@@ -46,9 +46,7 @@ tests:
       ManagedNodeGroupAMIType: AL2_x86_64
       EKSPublicAccessEndpoint: Disabled
       ProvisionBastionHost: Enabled
-      EKSPublicAccessEndpoint: Disabled
     regions:
-    - eu-north-1
     - us-west-2
   efs-prov:
     parameters:
@@ -58,6 +56,7 @@ tests:
       EfsThroughputMode: provisioned
       EfsProvisionedThroughputInMibps: 100
       EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Disabled
     regions:
     - ap-east-1
   managed-node-group:
@@ -115,7 +114,6 @@ tests:
       ALBIngressController: Enabled
       EKSPublicAccessEndpoint: Disabled
       ProvisionBastionHost: Enabled
-      EKSPublicAccessEndpoint: Disabled
     regions:
     - us-east-2
   fargate:
