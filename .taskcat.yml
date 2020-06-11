@@ -21,26 +21,20 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ProvisionBastionHost: Disabled
+      EKSPublicAccessEndpoint: Enabled
   public-endpoint:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
-      EKSPublicAccessEndpoint: Enabled
-      ProvisionBastionHost: Disabled
-    regions:
-      - ap-northeast-2
-  with-bastion:
-    parameters:
-      AvailabilityZones: $[taskcat_genaz_2]
-      NumberOfAZs: "2"
+      EKSPublicAccessEndpoint: Disabled
       ProvisionBastionHost: Enabled
     regions:
-      - ap-southeast-1
-      - cn-north-1
+      - ap-northeast-2
   cluster-autoscaler:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ClusterAutoScaler: Enabled
       ProvisionBastionHost: Enabled
+      EKSPublicAccessEndpoint: Disabled
     regions:
     - eu-central-1
   efs:
@@ -50,7 +44,9 @@ tests:
       ClusterAutoScaler: Disabled
       ManagedNodeGroup: 'yes'
       ManagedNodeGroupAMIType: AL2_x86_64
-      ProvisionBastionHost: Disabled
+      EKSPublicAccessEndpoint: Disabled
+      ProvisionBastionHost: Enabled
+      EKSPublicAccessEndpoint: Disabled
     regions:
     - eu-north-1
     - us-west-2
@@ -61,7 +57,7 @@ tests:
       ClusterAutoScaler: Disabled
       EfsThroughputMode: provisioned
       EfsProvisionedThroughputInMibps: 100
-      ProvisionBastionHost: Disabled
+      EKSPublicAccessEndpoint: Enabled
     regions:
     - ap-east-1
   managed-node-group:
@@ -70,6 +66,7 @@ tests:
       ClusterAutoScaler: Disabled
       ManagedNodeGroup: 'yes'
       ManagedNodeGroupAMIType: AL2_x86_64
+      EKSPublicAccessEndpoint: Enabled
       ProvisionBastionHost: Disabled
     regions:
     - ap-south-1
@@ -77,6 +74,8 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       MonitoringStack: Prometheus + Grafana
+      EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Disabled
     regions:
     - ap-southeast-2
     - us-west-2
@@ -84,6 +83,7 @@ tests:
     parameters:
       AvailabilityZones: $[taskcat_genaz_2]
       NumberOfAZs: "2"
+      EKSPublicAccessEndpoint: Enabled
       ProvisionBastionHost: Disabled
     regions:
     - ca-central-1
@@ -94,6 +94,7 @@ tests:
       AvailabilityZones: $[taskcat_genaz_2]
       NumberOfAZs: "2"
       EKSClusterLoggingTypes: ""
+      EKSPublicAccessEndpoint: Enabled
       ProvisionBastionHost: Disabled
     regions:
     - eu-west-1
@@ -104,12 +105,17 @@ tests:
       ManagedNodeGroup: 'yes'
       ManagedNodeGroupAMIType: AL2_x86_64
       MangedNodeGroupLabel: TestMNG
+      EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Disabled
     regions:
     - us-west-2
   alb-ingress:
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
       ALBIngressController: Enabled
+      EKSPublicAccessEndpoint: Disabled
+      ProvisionBastionHost: Enabled
+      EKSPublicAccessEndpoint: Disabled
     regions:
     - us-east-2
   fargate:
@@ -118,6 +124,8 @@ tests:
       ClusterAutoScaler: Enabled
       FargateNamespaces: kube-system
       FargateLabels: 'app.kubernetes.io/name=aws-cluster-autoscaler'
+      EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Disabled
     regions:
     - us-east-1
   enable-oidc:
@@ -125,5 +133,6 @@ tests:
       - eu-west-2
     parameters:
       AvailabilityZones: $[taskcat_genaz_3]
-      ProvisionBastionHost: Disabled
       IamOidcProvider: Enabled
+      EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Disabled
