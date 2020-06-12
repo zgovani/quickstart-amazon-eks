@@ -243,7 +243,14 @@ Parameters:
     Type: String
     Default: ""
     Description: "[OPTIONAL] Name for the EKS cluster, if left blank one will be auto-generated."
+  SnykIntegrationId:
+    Type: String
+    Default: ""
+  SnykIntegration:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
 Conditions:
+  EnableSnyk: !Equals [ !Ref SnykIntegration, Enabled]
   EnableFargate: !Not [!Equals [ !Ref FargateNamespaces, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
@@ -645,6 +652,23 @@ Resources:
     Type: Custom::GenerateName
     Properties:
       ServiceToken: !GetAtt 'GenerateNameFunction.Arn'
+  SnykStack:
+    Condition: EnableSnyk
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !Ref NodeGroupStack
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-eks-snyk/templates/eks-snyk.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        KubeClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+        SnykIntegrationId: !Ref SnykIntegrationId
+        Namespace: snyk-monitor
 Outputs:
   BastionIP:
     Value: !If

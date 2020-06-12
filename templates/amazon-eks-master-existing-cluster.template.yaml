@@ -1,224 +1,169 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "deploy an example workload into an existing kubernetes cluster (qs-1p817r5f9)"
+Description: "Prepare an existing EKS cluster (qs-1p817r5f9)"
+Metadata:
+  LintSpellExclude: [Security Group, Subnet IDs]
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: EKS cluster details
+        Parameters:
+          - KubeClusterName
+          - K8sSubnetIds
+          - ControlPlaneSecurityGroup
+    ParameterLabels:
+      KubeClusterName:
+        default: EKS cluster name
+      ControlPlaneSecurityGroup:
+        default: EKS Security Group
+      K8sSubnetIds:
+        default: EKS Subnet IDs
 Parameters:
   KubeClusterName:
     Type: String
-  NodeInstanceProfile:
-    Type: String
-  QSS3BucketName:
-    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
-    ConstraintDescription: Quick Start bucket name can include numbers, lowercase
-      letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen
-      (-).
-    Default: aws-quickstart
-    Description: S3 bucket name for the Quick Start assets. This string can include
-      numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start
-      or end with a hyphen (-).
-    Type: String
-  QSS3KeyPrefix:
-    AllowedPattern: ^[0-9a-zA-Z-/.]*$
-    ConstraintDescription: Quick Start key prefix can include numbers, lowercase letters,
-      uppercase letters, hyphens (-), dots(.) and forward slash (/).
-    Default: quickstart-amazon-eks/
-    Description: S3 key prefix for the Quick Start assets. Quick Start key prefix
-      can include numbers, lowercase letters, uppercase letters, hyphens (-), dots(.) and
-      forward slash (/).
-    Type: String
-  QSS3BucketRegion:
-    Default: 'us-east-1'
-    Description: The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is
-      hosted. When using your own bucket, you must specify this value.
-    Type: String
-  LambdaZipsBucketName:
-    Description: 'OPTIONAL: Bucket Name where the lambda zip files should be placed,
-          if left blank a bucket will be created.'
-    Type: String
-    Default: ''
+    Description: Name of the EKS cluster to be enabled for CloudFormation use.
   K8sSubnetIds:
-    Type: List<AWS::EC2::Subnet::Id>
-  VPCID:
-    Type: AWS::EC2::VPC::Id
+    Type: String
+    Description: '[Optional] comma separated list of Subnet IDs associated with the EKS cluster. Must have routes to the Kubernetes, CloudFormation and EKS endpoints. Leave blank for publicly accessible clusters.'
+    Default: ""
   ControlPlaneSecurityGroup:
-    Type: AWS::EC2::SecurityGroup::Id
+    Type: String
+    Default: ""
+    Description: '[Optional] Security Group ID attached to the EKS cluster. Must have allow outbound access to the Kubernetes, CloudFormation and EKS endpoints. Leave blank for publicly accessible clusters.'
 Conditions:
-  CreateLambdaZipsBucket: !Equals
-    - !Ref 'LambdaZipsBucketName'
-    - ''
-  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  EnableVpc: !Not [!Equals [!Ref K8sSubnetIds, '']]
+Mappings:
+  Config:
+    Bucket:
+      Bucket: 'aws-quickstart'
+      Key: 'quickstart-amazon-eks/functions/packages/'
 Resources:
-  WorkloadStack:
-    Type: AWS::CloudFormation::Stack
+  AwsCliLayer:
+    Type: AWS::Lambda::LayerVersion
     Properties:
-      TemplateURL: !Sub
-        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/example-workload.template.yaml'
-        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
-          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-      Parameters:
-        KubeClusterName: !Ref KubeClusterName
-        NodeInstanceProfile: !Ref NodeInstanceProfile
-  CopyZips:
-    Type: Custom::CopyZips
+      Content:
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}awscliLayer/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+  KubectlLayer:
+    Type: AWS::Lambda::LayerVersion
     Properties:
-      ServiceToken: !GetAtt 'CopyZipsFunction.Arn'
-      DestBucket: !Ref LambdaZipsBucketName
-      SourceBucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-      Prefix: !Ref 'QSS3KeyPrefix'
-      Objects:
-        - functions/packages/Helm/lambda.zip
-        - functions/packages/DeleteBucketContents/lambda.zip
-        - functions/packages/KubeManifest/lambda.zip
-        - functions/packages/LambdaEniCleanup/lambda.zip
-  VPCLambdaCleanup:
-    Type: Custom::LambdaCleanup
+      Content:
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}kubectlLayer/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+  CrhelperLayer:
+    Type: AWS::Lambda::LayerVersion
     Properties:
-      ServiceToken: !GetAtt VPCLambdaCleanupLambdaFunction.Arn
-      Region: !Ref "AWS::Region"
-      LambdaFunctionNames:
-        - !Ref KubeManifestLambda
-  VPCLambdaCleanupLambdaFunction:
-    DependsOn: CopyZips
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+      Content:
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}crhelperLayer/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+  CreateVpcRoleLambda:
     Type: "AWS::Lambda::Function"
     Properties:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
-      Role: !GetAtt LambdaCleanUpFunctionRole.Arn
+      Role: !GetAtt CreateVpcRoleRole.Arn
+      Layers: [!Ref CrhelperLayer]
       Runtime: python3.7
       Timeout: 900
       Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/LambdaEniCleanup/lambda.zip'
-  HelmLambda:
-    DependsOn: CopyZips
-    Type: AWS::Lambda::Function
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}createVpcRole/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+  RegisterTypeFunction:
+    Type: "AWS::Lambda::Function"
     Properties:
       Handler: lambda_function.lambda_handler
       MemorySize: 128
-      Role: !GetAtt ManifestRole.Arn
-      Runtime: python3.6
+      Role: !GetAtt RegisterTypeRole.Arn
+      Layers: [!Ref CrhelperLayer]
+      Runtime: python3.7
       Timeout: 900
       Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/Helm/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref K8sSubnetIds
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}registerType/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
   KubeManifestLambda:
-    DependsOn: CopyZips
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub "EKS-QuickStart-KubeManifest-${KubeClusterName}"
       Handler: lambda_function.lambda_handler
-      MemorySize: 128
-      Role: !GetAtt ManifestRole.Arn
-      Runtime: python3.6
-      Timeout: 900
-      Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
-      VpcConfig:
-        SecurityGroupIds: [ !Ref EKSLambdaSecurityGroup ]
-        SubnetIds: !Ref K8sSubnetIds
-  DeleteBucketContentsLambda:
-    DependsOn: CopyZips
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: lambda_function.lambda_handler
-      MemorySize: 128
-      Role: !GetAtt DeleteBucketContentsRole.Arn
+      MemorySize: 256
+      Role: !GetAtt KubernetesAdminRole.Arn
       Runtime: python3.7
       Timeout: 900
+      Layers: [!Ref KubectlLayer, !Ref CrhelperLayer, !Ref AwsCliLayer]
       Code:
-        S3Bucket: !Ref LambdaZipsBucketName
-        S3Key: !Sub '${QSS3KeyPrefix}functions/packages/DeleteBucketContents/lambda.zip'
-  CopyZipsFunction:
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}KubeManifest/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+      Environment: { Variables: { KUBECONFIG: /tmp/.kube/config } }
+      VpcConfig: !If
+        - EnableVpc
+        - SecurityGroupIds: [!Ref ControlPlaneSecurityGroup]
+          SubnetIds: !Split [",", !Ref K8sSubnetIds]
+        - !Ref 'AWS::NoValue'
+  KubeGetLambda:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Copies objects from a source S3 bucket to a destination
-      Handler: index.handler
+      FunctionName: !Sub "EKS-QuickStart-KubeGet-${KubeClusterName}"
+      Handler: lambda_function.lambda_handler
+      MemorySize: 256
+      Role: !GetAtt KubernetesAdminRole.Arn
       Runtime: python3.7
-      Role: !GetAtt CopyZipsRole.Arn
       Timeout: 900
+      Layers: [!Ref KubectlLayer, !Ref CrhelperLayer, !Ref AwsCliLayer]
       Code:
-        ZipFile: |
-          import json
-          import logging
-          import threading
-          import boto3
-          import cfnresponse
-          def copy_objects(source_bucket, dest_bucket, prefix, objects):
-              s3 = boto3.client('s3')
-              for o in objects:
-                  key = prefix + o
-                  copy_source = {
-                      'Bucket': source_bucket,
-                      'Key': key
-                  }
-                  print('copy_source: %s' % copy_source)
-                  print('dest_bucket = %s'%dest_bucket)
-                  print('key = %s' %key)
-                  s3.copy_object(CopySource=copy_source, Bucket=dest_bucket,
-              Key=key)
-          def delete_objects(bucket, prefix, objects):
-              s3 = boto3.client('s3')
-              objects = {'Objects': [{'Key': prefix + o} for o in objects]}
-              s3.delete_objects(Bucket=bucket, Delete=objects)
-          def timeout(event, context):
-              logging.error('Execution is about to time out, sending failure response to CloudFormation')
-              cfnresponse.send(event, context, cfnresponse.FAILED, {}, physical_resource_id)
-          def handler(event, context):
-              physical_resource_id = None
-              if "PhysicalResourceId" in event.keys():
-                physical_resource_id = event["PhysicalResourceId"]
-              # make sure we send a failure to CloudFormation if the function is going to timeout
-              timer = threading.Timer((context.get_remaining_time_in_millis()
-              / 1000.00) - 0.5, timeout, args=[event, context])
-              timer.start()
-              print('Received event: %s' % json.dumps(event))
-              status = cfnresponse.SUCCESS
-              try:
-                  source_bucket = event['ResourceProperties']['SourceBucket']
-                  dest_bucket = event['ResourceProperties']['DestBucket']
-                  prefix = event['ResourceProperties']['Prefix']
-                  objects = event['ResourceProperties']['Objects']
-                  if event['RequestType'] == 'Delete':
-                      delete_objects(dest_bucket, prefix, objects)
-                  else:
-                      copy_objects(source_bucket, dest_bucket, prefix, objects)
-              except Exception as e:
-                  logging.error('Exception: %s' % e, exc_info=True)
-                  status = cfnresponse.FAILED
-              finally:
-                  timer.cancel()
-                  cfnresponse.send(event, context, status, {}, physical_resource_id)
-  LambdaZipsBucket:
-    Type: AWS::S3::Bucket
-    Condition: CreateLambdaZipsBucket
-  LambdaCleanUpFunctionRole:
-    Type: AWS::IAM::Role
+        S3Bucket: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+        S3Key: !Sub ['${P}KubeGet/lambda.zip', {P: !FindInMap [Config, Bucket, Key]}]
+      Environment: { Variables: { KUBECONFIG: /tmp/.kube/config } }
+      VpcConfig: !If
+      - EnableVpc
+      - SecurityGroupIds: [!Ref ControlPlaneSecurityGroup]
+        SubnetIds: !Split [",", !Ref K8sSubnetIds]
+      - !Ref 'AWS::NoValue'
+
+  # custom resources
+  CreateVpcRole:
+    Type: Custom::CreateVpcRole
     Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Action: ['sts:AssumeRole']
-            Effect: Allow
-            Principal:
-              Service: [lambda.amazonaws.com]
+      ServiceToken: !GetAtt CreateVpcRoleLambda.Arn
+      Partition: !Ref "AWS::Partition"
+  RegisterHelmType:
+    Type: Custom::RegisterType
+    Properties:
+      ServiceToken: !GetAtt RegisterTypeFunction.Arn
+      TypeName: "AWSQS::Kubernetes::Helm"
+      Version: "1.0.0-beta4"
+      SchemaHandlerPackage: !Sub
+        - "s3://${BN}/${KP}"
+        - BN: !Sub ['${P}-${AWS::Region}', {P: !FindInMap [Config, Bucket, Bucket]}]
+          KP: !Sub ['${P}HelmReleaseResource/awsqs-kubernetes-helm.zip', {P: !FindInMap [Config, Bucket, Key]}]
+      IamPolicy:
         Version: '2012-10-17'
-      Path: /
-      Policies:
-        - PolicyName: LambdaRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Action:
-                  - 'logs:CreateLogGroup'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Effect: Allow
-                Resource: !Sub "arn:${AWS::Partition}:logs:*:*:*"
-              - Action:
-                  - 'ec2:*'
-                Effect: Allow
-                Resource: "*"
-  DeleteBucketContentsRole:
+        Statement:
+          - Effect: Allow
+            Action:
+              - "secretsmanager:GetSecretValue"
+              - "kms:Decrypt"
+              - "eks:DescribeCluster"
+              - "s3:GetObject"
+              - "sts:AssumeRole"
+              - "iam:PassRole"
+              - "iam:ListRolePolicies"
+              - "iam:ListAttachedRolePolicies"
+              - "iam:GetRole"
+              - "iam:GetPolicy"
+              - "iam:GetPolicyVersion"
+              - "ec2:CreateNetworkInterface"
+              - "ec2:DeleteNetworkInterface"
+              - "ec2:Describe*"
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "lambda:*"
+            Resource: "*"
+
+  # IAM resources
+  CreateVpcRoleRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -231,43 +176,22 @@ Resources:
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
-        - PolicyName: deletebucketcontents
+        - PolicyName: create-role
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: s3:*
-                Resource:
-                  - !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/*'
-                  - !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}'
-  CopyZipsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - !Sub  'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-      Policies:
-        - PolicyName: lambda-copier
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
+                Action: "iam:CreateRole"
+                Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/CloudFormation-Kubernetes-VPC'
               - Effect: Allow
-                Action: s3:GetObject
-                Resource: !Sub
-                  - 'arn:${AWS::Partition}:s3:::${S3Bucket}/${QSS3KeyPrefix}*'
-                  - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource: !Sub 'arn:${AWS::Partition}:s3:::${LambdaZipsBucketName}/${QSS3KeyPrefix}*'
-  ManifestRole:
+                Action: "iam:AttachRolePolicy"
+                Resource: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:role/CloudFormation-Kubernetes-VPC'
+                Condition:
+                  ArnEquals:
+                    "iam:PolicyARN":
+                      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaENIManagementAccess'
+                      - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+  KubernetesAdminRole:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
@@ -283,10 +207,14 @@ Resources:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action: s3:GetObject
-                Resource: !Sub
-                  - 'arn:${AWS::Partition}:s3:::${BucketName}/*'
-                  - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+                Action:
+                  - cloudformation:*
+                  - eks:*
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeVpcs
+                  - lambda:InvokeFunction
+                Resource: "*"
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
@@ -297,23 +225,53 @@ Resources:
                   - ec2:DeleteNetworkInterface
                 Resource:
                   - "*"
-              - Action: "kms:decrypt"
-                Effect: Allow
-                Resource: "*"
-              - Action: "s3:GetObject"
-                Effect: Allow
-                Resource: "*"
-  EKSLambdaSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                Resource:  "*"
+              - Effect: Allow
+                Action:
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:PutTargets
+                  - events:RemoveTargets
+                Resource:  "*"
+  RegisterTypeRole:
+    Type: AWS::IAM::Role
     Properties:
-      GroupDescription: Security group for lambda to communicate with cluster API
-      VpcId: !Ref VPCID
-  ClusterControlPlaneSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow lambda to communicate with the cluster API Server
-      GroupId: !Ref ControlPlaneSecurityGroup
-      SourceSecurityGroupId: !Ref EKSLambdaSecurityGroup
-      IpProtocol: tcp
-      ToPort: 443
-      FromPort: 443
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: ResourceTypePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "cloudformation:*"
+                  - "iam:PassRole"
+                  - "iam:CreateRole"
+                  - "iam:CreatePolicy"
+                  - "iam:ListPolicyVersions"
+                  - "iam:DeletePolicyVersion"
+                  - "iam:CreatePolicyVersion"
+                  - "iam:AttachRolePolicy"
+                  - "ssm:GetParameter"
+                  - "ssm:PutParameter"
+                  - "sts:GetCallerIdentity"
+                Resource: "*"
+
+Outputs:
+  EKSAdminRoleArn:
+    Value: !GetAtt KubernetesAdminRole.Arn
+  HelmRoleArn:
+    Value: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/awsqs-kubernetes-helm"

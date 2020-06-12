@@ -134,3 +134,12 @@ tests:
       IamOidcProvider: Enabled
       EKSPublicAccessEndpoint: Enabled
       ProvisionBastionHost: Disabled
+  snyk:
+    regions:
+      - eu-west-3
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ProvisionBastionHost: Disabled
+      EKSPublicAccessEndpoint: Enabled
+      SnykIntegration: Enabled
+      SnykIntegrationId: overridden

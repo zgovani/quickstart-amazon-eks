@@ -2,6 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Deploys an EKS cluster in a new VPC (qs-1p7nknoht)
 Metadata:
   LintSpellExclude:
+    - https://support.snyk.io/hc/en-us/articles/360003916158-Install-the-Snyk-controller-with-Helm
     - Kubernetes
     - ARNs
     - Resource Names
@@ -17,6 +18,8 @@ Metadata:
     - Encrypt
     - Fargate
     - namespace
+    - Snyk
+    - Security
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
@@ -61,6 +64,11 @@ Metadata:
           - FargateNamespaces
           - FargateLabels
           - IamOidcProvider
+      - Label:
+          default: Snyk monitor [APN security partner]
+        Parameters:
+          - SnykIntegration
+          - SnykIntegrationId
       - Label:
           default: Optional Kubernetes add-ins
         Parameters:
@@ -167,6 +175,10 @@ Metadata:
         default: IAM OIDC provider
       EKSClusterName:
         default: EKS cluster name
+      SnykIntegrationId:
+        default: Snyk integration ID
+      SnykIntegration:
+        default: Snyk integration
 Parameters:
   AvailabilityZones:
     Description: The list of Availability Zones to use for the subnets in the VPC. Three
@@ -413,7 +425,7 @@ Parameters:
     MinValue: 0
     MaxValue: 1024
     Default: 0
-    Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled. If using Provisioned Throughput, value must be between 0-1024.
+    Description: Set to 0 if EfsThroughputMode is set to bursting. Only has an effect when EfsStorageClass is enabled. If using provisioned throughput, value must be between 0-1024.
   MonitoringStack:
     Type: String
     AllowedValues: [ "Prometheus + Grafana", "None" ]
@@ -454,6 +466,16 @@ Parameters:
     Type: String
     Default: ""
     Description: "[OPTIONAL] Name for the EKS cluster, if left blank one will be auto-generated. Must be unique within the AWS Region."
+  SnykIntegrationId:
+    Type: String
+    AllowedPattern: '^[a-z0-9-]{36}$|^$'
+    Default: ""
+    Description: '[Optional] Snyk Kubernetes integration ID. If Snyk is enabled, this must be provided. For more information see https://support.snyk.io/hc/en-us/articles/360003916158-Install-the-Snyk-controller-with-Helm .'
+  SnykIntegration:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Disabled
+    Description: "Snyk security monitor integration. For more information see https://github.com/aws-quickstart/quickstart-eks-snyk/ ."
 Rules:
   LablesNeedNamespaces:
     RuleCondition: !Not
@@ -569,6 +591,8 @@ Resources:
         FargateNamespaces: !Ref FargateNamespaces
         IamOidcProvider: !Ref IamOidcProvider
         EKSClusterName: !Ref EKSClusterName
+        SnykIntegrationId: !Ref SnykIntegrationId
+        SnykIntegration: !Ref SnykIntegration
 Outputs:
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName

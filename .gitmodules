@@ -12,3 +12,6 @@
 [submodule "functions/source/HelmReleaseResource"]
 	path = functions/source/HelmReleaseResource
 	url = git@github.com:aws-quickstart/quickstart-helm-resource-provider.git
+[submodule "submodules/quickstart-eks-snyk"]
+	path = submodules/quickstart-eks-snyk
+	url = git@github.com:aws-quickstart/quickstart-eks-snyk.git
