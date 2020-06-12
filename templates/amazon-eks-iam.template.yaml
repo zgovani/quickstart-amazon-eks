@@ -34,12 +34,17 @@ Parameters:
     Type: String
     Default: "Enabled"
     AllowedValues: ["Enabled", "Disabled"]
+  CreateWindowsRole:
+    Type: String
+    Default: "Enabled"
+    AllowedValues: ["Enabled", "Disabled"]
   BastionIAMRoleName:
     Type: String
     Default: ""
 Conditions:
   CreateDeleteBucketContentsRole: !Equals [!Ref 'DeleteLambdaZipsBucketContents', "True"]
   EnableBastionRole: !Equals [!Ref CreateBastionRole, "Enabled"]
+  EnableWindowsRole: !Equals [!Ref CreateWindowsRole, "Enabled"]
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 Resources:
   CreateVpcRoleRole:
@@ -213,6 +218,42 @@ Resources:
                 Resource: !Sub
                  - "arn:${AWS::Partition}:s3:::${BucketName}/${QSS3KeyPrefix}*"
                  - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+  WindowsNodeInstanceRole:
+    Condition: EnableWindowsRole
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - !Sub "ec2.${AWS::URLSuffix}"
+            Action:
+              - "sts:AssumeRole"
+      Path: /      
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonElasticFileSystemReadOnlyAccess'
+      Policies:
+        - PolicyName: QSBucketAccess
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub
+                 - "arn:${AWS::Partition}:s3:::${BucketName}/${QSS3KeyPrefix}*"
+                 - BucketName: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+  WindowsNodeInstanceProfile:
+    Condition: EnableWindowsRole
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: /
+      Roles:
+        - Ref: WindowsNodeInstanceRole
   BastionRole:
     Condition: EnableBastionRole
     Type: "AWS::IAM::Role"
@@ -514,6 +555,10 @@ Outputs:
     Value: !GetAtt NodeInstanceRole.Arn
   NodeInstanceRoleName:
     Value: !Ref NodeInstanceRole
+  WindowsNodeInstanceProfile:
+    Value: !If [EnableWindowsRole, !Ref WindowsNodeInstanceProfile, ""]
+  WindowsNodeInstanceRoleArn:
+    Value: !If [EnableWindowsRole, !GetAtt WindowsNodeInstanceRole.Arn, ""]
   BastionRole:
     Value: !If [EnableBastionRole, !Ref BastionRole, !Ref BastionIAMRoleName]
   CleanupLoadBalancersRoleArn:

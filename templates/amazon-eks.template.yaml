@@ -57,80 +57,12 @@ Parameters:
     Default: ""
   NodeInstanceType:
     Default: t3.medium
-    AllowedValues:
-      - t3.nano
-      - t3.micro
-      - t3.small
-      - t3.medium
-      - t3.large
-      - t3.xlarge
-      - t3.2xlarge
-      - t3a.nano
-      - t3a.micro
-      - t3a.small
-      - t3a.medium
-      - t3a.large
-      - t3a.xlarge
-      - t3a.2xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
-      - m5a.large
-      - m5a.xlarge
-      - m5a.2xlarge
-      - m5a.4xlarge
-      - m5a.12xlarge
-      - m5a.24xlarge
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.18xlarge
-      - c5a.large
-      - c5a.xlarge
-      - c5a.2xlarge
-      - c5a.4xlarge
-      - c5a.12xlarge
-      - c5a.24xlarge
-      - i3.large
-      - i3.xlarge
-      - i3.2xlarge
-      - i3.4xlarge
-      - i3.8xlarge
-      - i3.16xlarge
-      - x1.16xlarge
-      - x1.32xlarge
-      - p3.2xlarge
-      - p3.8xlarge
-      - p3.16xlarge
-      - r5.large
-      - r5.xlarge
-      - r5.2xlarge
-      - r5.4xlarge
-      - r5.12xlarge
-      - r5.24xlarge
-      - r5a.large
-      - r5a.xlarge
-      - r5a.2xlarge
-      - r5a.4xlarge
-      - r5a.12xlarge
-      - r5a.24xlarge
-      - r5d.large
-      - r5d.xlarge
-      - r5d.2xlarge
-      - r5d.4xlarge
-      - r5d.12xlarge
-      - r5d.24xlarge
-      - z1d.large
-      - z1d.xlarge
-      - z1d.2xlarge
-      - z1d.3xlarge
-      - z1d.6xlarge
-      - z1d.12xlarge
+    AllowedValues: [t3.nano,t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge, m5.large, m5.xlarge, m5.2xlarge
+                    m5.4xlarge, m5.12xlarge, m5.24xlarge, c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge, c5.18xlarge,
+                    i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, x1.16xlarge, x1.32xlarge, p3.2xlarge,
+                    p3.8xlarge, p3.16xlarge, r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r5.12xlarge, r5.24xlarge, r5d.large, 
+                    r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.12xlarge, r5d.24xlarge, z1d.large, z1d.xlarge, z1d.2xlarge. 
+                    z1d.3xlarge, z1d.6xlarge, z1d.12xlarge]
     ConstraintDescription: Must be a valid EC2 instance type
     Type: String
   NumberOfNodes:
@@ -162,6 +94,34 @@ Parameters:
     Description: Add a custom name label to the Managed Node Group Nodes. If you dont do this then a default one will be added for you.
     Type: String
     Default: ''
+  WindowsSupport:
+    AllowedValues: ["Enabled", "Disabled"]
+    Description: Choose Enabled to create a Windows Nodegroup. If you choose "Enabled", you must select Kubernetes Version 1.14 or higher.
+    Type: String
+    Default: "Disabled"
+  WindowsCustomAmiId:
+    Description: (Optional) Specify your own custom AMI ID.
+    Type: String
+    Default: ""
+  WindowsNodeInstanceType:
+    Default: t3.medium
+    AllowedValues: [t3.nano,t3.micro, t3.small, t3.medium, t3.large, t3.xlarge, t3.2xlarge, m5.large, m5.xlarge, m5.2xlarge
+                    m5.4xlarge, m5.12xlarge, m5.24xlarge, c5.large, c5.xlarge, c5.2xlarge, c5.4xlarge, c5.9xlarge, c5.18xlarge,
+                    i3.large, i3.xlarge, i3.2xlarge, i3.4xlarge, i3.8xlarge, i3.16xlarge, x1.16xlarge, x1.32xlarge, p3.2xlarge,
+                    p3.8xlarge, p3.16xlarge, r5.large, r5.xlarge, r5.2xlarge, r5.4xlarge, r5.12xlarge, r5.24xlarge, r5d.large, 
+                    r5d.xlarge, r5d.2xlarge, r5d.4xlarge, r5d.12xlarge, r5d.24xlarge, z1d.large, z1d.xlarge, z1d.2xlarge. 
+                    z1d.3xlarge, z1d.6xlarge, z1d.12xlarge]
+    ConstraintDescription: Must be a valid EC2 instance type
+    Type: String
+  WindowsNumberOfNodes:
+    Default: 3
+    Type: Number
+  WindowsNodeGroupName:
+    Default: Default-Windows
+    Type: String
+  WindowsNodeVolumeSize:
+    Default: 50
+    Type: String
   LambdaZipsBucketName:
     Type: String
     Default: ''
@@ -306,8 +266,13 @@ Conditions:
   EnableALBIngressController: !Equals [!Ref 'ProvisionALBIngressController', 'Enabled']
   EnableMonitoringPrometheusGrafana: !Equals [!Ref 'ProvisionMonitoringStack', 'Prometheus + Grafana']
   EnableEfs: !Equals [!Ref 'EfsStorageClass', 'Enabled']
+  EnableWindows: !Equals [!Ref 'WindowsSupport', 'Enabled']
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
   GenerateClusterName: !Equals [!Ref 'EKSClusterName', '']
+  EnableOIDC: !Or
+    - !Equals [!Ref 'ProvisionALBIngressController', 'Enabled']
+    - !Equals [!Ref 'WindowsSupport', 'Enabled']
+    - !Equals [!Ref IamOidcProvider, "Enabled"]
 Resources:
   BastionEksPermissions:
     Condition: EnableBastion
@@ -409,6 +374,34 @@ Resources:
         QSS3BucketRegion: !Ref QSS3BucketRegion
         CleanupSecurityGroupDependenciesLambdaArn: !GetAtt FunctionStack.Outputs.CleanupSecurityGroupDependenciesLambdaArn
         NodeSGFunctionArn: !GetAtt FunctionStack.Outputs.NodeSGFunctionArn
+  WindowsNodeGroupStack:
+    Condition: EnableWindows
+    DependsOn: WindowsSupportStack
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-windows-nodegroup.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        KeyPairName: !Ref 'KeyPairName'
+        PrivateSubnet1ID: !Ref PrivateSubnet1ID
+        PrivateSubnet2ID: !If [2AZDeployment, !Ref PrivateSubnet2ID, !Ref "AWS::NoValue" ]
+        PrivateSubnet3ID: !If [3AZDeployment, !Ref PrivateSubnet3ID, !Ref "AWS::NoValue" ]
+        VPCID: !Ref VPCID
+        CustomAmiId: !Ref WindowsCustomAmiId
+        NodeInstanceType: !Ref WindowsNodeInstanceType
+        NumberOfNodes: !Ref WindowsNumberOfNodes
+        NodeGroupName: !Ref WindowsNodeGroupName
+        NodeVolumeSize: !Ref WindowsNodeVolumeSize
+        NodeSecurityGroup: !GetAtt NodeGroupStack.Outputs.EKSNodeSecurityGroup
+        ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+        ControlPlaneSecurityGroup: !Ref ControlPlaneSecurityGroup
+        NodeInstanceProfile: !GetAtt IamStack.Outputs.WindowsNodeInstanceProfile
+        NodeInstanceRoleArn: !GetAtt IamStack.Outputs.WindowsNodeInstanceRoleArn
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSS3BucketRegion: !Ref QSS3BucketRegion
   BastionSShToNodes:
     Condition: EnableBastion
     Type: "AWS::EC2::SecurityGroupIngress"
@@ -442,6 +435,7 @@ Resources:
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
         CreateBastionRole: !If [CustomBastionRole, "Disabled", !If [EnableBastion, "Enabled", "Disabled"]]
+        CreateWindowsRole: !Ref WindowsSupport
         BastionIAMRoleName: !Ref BastionIAMRoleName
   FunctionStack:
     Type: "AWS::CloudFormation::Stack"
@@ -574,6 +568,7 @@ Resources:
               - !Join [",", [ !Ref PrivateSubnet1ID ]]
         RoleArn: !GetAtt IamStack.Outputs.ControlPlaneRoleArn
         NodeInstanceRoleArn: !GetAtt IamStack.Outputs.NodeInstanceRoleArn
+        WindowsNodeInstanceRoleArn: !GetAtt IamStack.Outputs.WindowsNodeInstanceRoleArn
         AdditionalEKSAdminUserArn: !Ref AdditionalEKSAdminUserArn
         AdditionalEKSAdminRoleArn: !Ref AdditionalEKSAdminRoleArn
         KubernetesVersion: !Ref KubernetesVersion
@@ -587,7 +582,7 @@ Resources:
         EKSClusterLoggingTypes: !Join [ ',', !Ref 'EKSClusterLoggingTypes' ]
         EKSEncryptSecrets: !Ref EKSEncryptSecrets
         EKSEncryptSecretsKmsKeyArn: !Ref EKSEncryptSecretsKmsKeyArn
-        IamOidcProvider: !If [ EnableALBIngressController, 'Enabled', !Ref IamOidcProvider ]
+        IamOidcProvider: !If [EnableOIDC, 'Enabled', 'Disabled']
         EKSClusterName: !If [GenerateClusterName, !Ref GenerateName, !Ref EKSClusterName]
   PrometheusStack:
     Metadata:
@@ -724,6 +719,23 @@ Resources:
         KubeClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
         SnykIntegrationId: !Ref SnykIntegrationId
         Namespace: snyk-monitor
+  WindowsSupportStack:
+    DependsOn: NodeGroupStack
+    Condition: EnableWindows
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/amazon-eks-windows-support-workload.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        ClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+        ClusterKubeServerEndpoint: !GetAtt EKSControlPlane.Outputs.EKSEndpoint
+        ClusterCACert: !GetAtt EKSControlPlane.Outputs.CAData
+        OIDCProvider: !Join [ '', !Split [ 'https://', !GetAtt EKSControlPlane.Outputs.OIDCIssuerURL ] ]
+        QSS3BucketName: !Ref QSS3BucketName
+        QSS3KeyPrefix: !Ref QSS3KeyPrefix
+        QSS3BucketRegion: !Ref QSS3BucketRegion
 Outputs:
   BastionIP:
     Value: !If
