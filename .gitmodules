@@ -15,3 +15,6 @@
 [submodule "submodules/quickstart-eks-snyk"]
 	path = submodules/quickstart-eks-snyk
 	url = git@github.com:aws-quickstart/quickstart-eks-snyk.git
+[submodule "submodules/quickstart-eks-newrelic-infrastructure"]
+	path = submodules/quickstart-eks-newrelic-infrastructure
+	url = git@github.com:aws-quickstart/quickstart-eks-newrelic-infrastructure.git

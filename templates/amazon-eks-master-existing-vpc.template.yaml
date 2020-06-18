@@ -50,6 +50,11 @@ Metadata:
         Parameters:
           - SnykIntegrationId
       - Label:
+          default: New Relic infrastructure [APN monitoring partner]
+        Parameters:
+          - NewRelicIntegration
+          - NewRelicLicenseKey
+      - Label:
           default: AWS Quick Start configuration
         Parameters:
           - QSS3BucketName
@@ -132,6 +137,10 @@ Metadata:
         default: EKS cluster name
       SnykIntegrationId:
         default: Snyk integration ID
+      NewRelicIntegration:
+        default: New Relic integration
+      NewRelicLicenseKey:
+        default: New Relic license key
 Parameters:
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you
@@ -383,6 +392,17 @@ Parameters:
     AllowedValues: [Enabled, Disabled]
     Default: Disabled
     Description: "Snyk security monitor integration. For more information see https://github.com/aws-quickstart/quickstart-eks-snyk/ ."
+  NewRelicLicenseKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: '[Optional] New Relic infrastructure license key. If New Relic is enabled, this must be provided. For more information see https://docs.newrelic.com/docs/accounts/install-new-relic/account-setup/license-key .'
+  NewRelicIntegration:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Disabled
+    Description: "New Relic infrastructure monitoring integration. For more information see https://github.com/aws-quickstart/quickstart-eks-newrelic-infrastructure/ ."
+
 Rules:
   EKSVersion_ManagedNodeGrou:
     RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
@@ -453,6 +473,8 @@ Resources:
         EKSClusterName: !Ref EKSClusterName
         SnykIntegrationId: !Ref SnykIntegrationId
         SnykIntegration: !Ref SnykIntegration
+        NewRelicLicenseKey: !Ref NewRelicLicenseKey
+        NewRelicIntegration: !Ref NewRelicIntegration
 Outputs:
   EKSClusterName:
     Value: !GetAtt EKSStack.Outputs.EKSClusterName

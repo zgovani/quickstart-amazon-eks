@@ -3,9 +3,7 @@ project:
   owner: quickstart-eng@amazon.com
   regions:
   - eu-north-1
-  - eu-west-3
   - me-south-1
-  - sa-east-1
   - us-east-1
   - us-east-2
   - us-west-2
@@ -142,4 +140,13 @@ tests:
       ProvisionBastionHost: Disabled
       EKSPublicAccessEndpoint: Enabled
       SnykIntegration: Enabled
-      SnykIntegrationId: overridden
+      SnykIntegrationId: ---overridden---
+  new-relic:
+    regions:
+      - sa-east-1
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ProvisionBastionHost: Disabled
+      EKSPublicAccessEndpoint: Enabled
+      NewRelicIntegration: Enabled
+      NewRelicLicenseKey: ---overridden---

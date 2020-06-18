@@ -249,8 +249,17 @@ Parameters:
   SnykIntegration:
     Type: String
     AllowedValues: [Enabled, Disabled]
+  NewRelicLicenseKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  NewRelicIntegration:
+    Type: String
+    AllowedValues: [Enabled, Disabled]
+    Default: Disabled
 Conditions:
   EnableSnyk: !Equals [ !Ref SnykIntegration, Enabled]
+  EnableNewRelic: !Equals [ !Ref NewRelicIntegration, Enabled]
   EnableFargate: !Not [!Equals [ !Ref FargateNamespaces, ""]]
   3AZDeployment: !Not [!Equals [!Ref PrivateSubnet3ID, ""]]
   2AZDeployment: !Or
@@ -652,6 +661,22 @@ Resources:
     Type: Custom::GenerateName
     Properties:
       ServiceToken: !GetAtt 'GenerateNameFunction.Arn'
+  NewRelicStack:
+    Condition: EnableNewRelic
+    Type: AWS::CloudFormation::Stack
+    Metadata:
+      DependsOn:
+        - !Ref ControlPlaneSecurityGroupIngress
+        - !Ref NodeGroupStack
+        - !If [EnableFargate, !Ref FargateNamespaces, !Ref 'AWS::NoValue']
+    Properties:
+      TemplateURL: !Sub
+        - 'https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}submodules/quickstart-eks-newrelic-infrastructure/templates/new-relic-infrastructure.template.yaml'
+        - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+          S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        KubeClusterName: !GetAtt EKSControlPlane.Outputs.EKSName
+        NewRelicLicenseKey: !Ref NewRelicLicenseKey
   SnykStack:
     Condition: EnableSnyk
     Type: AWS::CloudFormation::Stack
