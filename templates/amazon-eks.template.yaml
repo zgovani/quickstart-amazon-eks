@@ -249,6 +249,7 @@ Parameters:
   SnykIntegration:
     Type: String
     AllowedValues: [Enabled, Disabled]
+    Default: Disabled
   NewRelicLicenseKey:
     Type: String
     Default: ""
