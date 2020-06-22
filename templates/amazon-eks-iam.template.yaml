@@ -143,6 +143,7 @@ Resources:
                   - ec2:DescribeSubnets
                   - ec2:DescribeVpcs
                   - lambda:InvokeFunction
+                  - s3:GetObject
                 Resource: "*"
               - Effect: Allow
                 Action:
