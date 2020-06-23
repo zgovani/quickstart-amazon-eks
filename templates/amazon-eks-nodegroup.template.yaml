@@ -373,9 +373,7 @@ Conditions:
     - !Equals [ !Ref 'ManagedNodeGroup', 'no' ]
   AutoScalerDisabled: !Equals [ !Ref 'ProvisionClusterAutoScaler', 'Disabled' ]
   DisableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup' , 'no' ]
-  EnableManagedNodeGroup: !And
-     - !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
-     - !Condition AutoScalerDisabled
+  EnableManagedNodeGroup: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
   GreaterThan114: !Not
     - !Or

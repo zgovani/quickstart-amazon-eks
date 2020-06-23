@@ -510,13 +510,6 @@ Rules:
         Assert: !Contains
           - [ '1.16', '1.15', '1.14' ]
           - !Ref 'KubernetesVersion'
-  ClusterAutoScalerVerification:
-    RuleCondition: !Equals [ !Ref 'ManagedNodeGroup', 'yes' ]
-    Assertions:
-      - AssertDescription: To use Cluster AutoScaler you should not use Managed Node Groups
-        Assert: !Contains
-          - - 'Disabled'
-          - !Ref 'ClusterAutoScaler'
 Conditions:
   3AZDeployment: !Equals [!Ref NumberOfAZs, "3"]
   2AZDeployment: !Or
