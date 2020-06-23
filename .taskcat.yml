@@ -150,3 +150,13 @@ tests:
       EKSPublicAccessEndpoint: Enabled
       NewRelicIntegration: Enabled
       NewRelicLicenseKey: ---overridden---
+  managed-node-group-ASC:
+    parameters:
+      AvailabilityZones: $[taskcat_genaz_3]
+      ClusterAutoScaler: Enabled
+      ManagedNodeGroup: 'yes'
+      ManagedNodeGroupAMIType: AL2_x86_64
+      EKSPublicAccessEndpoint: Enabled
+      ProvisionBastionHost: Enabled
+    regions:
+    - ap-south-1
