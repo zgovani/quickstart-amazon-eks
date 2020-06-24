@@ -24,9 +24,9 @@ except Exception as init_exception:
 
 def s3_get(url):
     try:
-        return str(s3_client.get_object(
+        return s3_client.get_object(
             Bucket=url.split('/')[2], Key="/".join(url.split('/')[3:])
-        )['Body'].read())
+        )['Body'].read().decode('utf8')
     except Exception as e:
         raise RuntimeError(f"Failed to fetch CustomValueYaml {url} from S3. {e}")
 
