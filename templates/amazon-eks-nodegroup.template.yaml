@@ -431,18 +431,37 @@ Mappings:
     t3.large: { Type: STD }
     t3.xlarge: { Type: STD }
     t3.2xlarge: { Type: STD }
+    t3a.nano: { Type: STD }
+    t3a.micro: { Type: STD }
+    t3a.small: { Type: STD }
+    t3a.medium: { Type: STD }
+    t3a.large: { Type: STD }
+    t3a.xlarge: { Type: STD }
+    t3a.2xlarge: { Type: STD }
     m5.large: { Type: STD }
     m5.xlarge: { Type: STD }
     m5.2xlarge: { Type: STD }
     m5.4xlarge: { Type: STD }
     m5.12xlarge: { Type: STD }
     m5.24xlarge: { Type: STD }
+    m5a.large: { Type: STD }
+    m5a.xlarge: { Type: STD }
+    m5a.2xlarge: { Type: STD }
+    m5a.4xlarge: { Type: STD }
+    m5a.12xlarge: { Type: STD }
+    m5a.24xlarge: { Type: STD }
     c5.large: { Type: STD }
     c5.xlarge: { Type: STD }
     c5.2xlarge: { Type: STD }
     c5.4xlarge: { Type: STD }
     c5.9xlarge: { Type: STD }
     c5.18xlarge: { Type: STD }
+    c5a.large: { Type: STD }
+    c5a.xlarge: { Type: STD }
+    c5a.2xlarge: { Type: STD }
+    c5a.4xlarge: { Type: STD }
+    c5a.12xlarge: { Type: STD }
+    c5a.24xlarge: { Type: STD }
     i3.large: { Type: STD }
     i3.xlarge: { Type: STD }
     i3.2xlarge: { Type: STD }
@@ -460,6 +479,12 @@ Mappings:
     r5.4xlarge: { Type: STD }
     r5.12xlarge: { Type: STD }
     r5.24xlarge: { Type: STD }
+    r5a.large: { Type: STD }
+    r5a.xlarge: { Type: STD }
+    r5a.2xlarge: { Type: STD }
+    r5a.4xlarge: { Type: STD }
+    r5a.12xlarge: { Type: STD }
+    r5a.24xlarge: { Type: STD }
     r5d.large: { Type: STD }
     r5d.xlarge: { Type: STD }
     r5d.2xlarge: { Type: STD }
