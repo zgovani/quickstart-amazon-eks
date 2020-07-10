@@ -259,7 +259,7 @@ def create_handler(event, _):
         return physical_resource_id
     outp = run_command("kubectl create --save-config -o json -f %s" % manifest_file)
     helper.Data = build_output(json.loads(outp))
-    if helper.Data["selfLink"].startswith('/apis/batch'):
+    if helper.Data["selfLink"].startswith('/apis/batch') and 'cronjobs' not in helper.Data["selfLink"]:
         stabilize_job(helper.Data["namespace"], helper.Data["name"])
     return helper.Data["selfLink"]
 
