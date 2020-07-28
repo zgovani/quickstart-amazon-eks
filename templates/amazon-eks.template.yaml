@@ -474,6 +474,7 @@ Resources:
             - !Join [",", [ !Ref PrivateSubnet1ID, !Ref PrivateSubnet2ID ]]
             - !Ref PrivateSubnet1ID
         EKSClusterName: !If [GenerateClusterName, !Ref GenerateName, !Ref EKSClusterName]
+        HttpProxy: !Ref HttpProxy
   ClusterAutoScalerStack:
     Condition: EnableClusterAutoScaler
     Metadata:

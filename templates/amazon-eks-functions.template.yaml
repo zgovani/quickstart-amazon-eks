@@ -63,11 +63,15 @@ Parameters:
     Type: List<String>
   EKSClusterName:
     Type: String
+  HttpProxy:
+    Type: String
+    Default: ""
 Conditions:
   CreateDeleteBucketContentsLambda: !Equals
     - !Ref 'DeleteLambdaZipsBucketContents'
     - "True"
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  NoProxy: !Equals [!Ref HttpProxy, '']
 Resources:
   CopyZips:
     Type: Custom::CopyZips
@@ -309,7 +313,11 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaZipsBucketName
         S3Key: !Sub '${QSS3KeyPrefix}functions/packages/KubeManifest/lambda.zip'
-      Environment: { Variables: { KUBECONFIG: /tmp/.kube/config } }
+      Environment:
+        Variables:
+          KUBECONFIG: /tmp/.kube/config
+          HTTPS_PROXY: !If [NoProxy, !Ref 'AWS::NoValue', !Ref HttpProxy]
+          HTTP_PROXY: !If [NoProxy, !Ref 'AWS::NoValue', !Ref HttpProxy]
       VpcConfig:
         SecurityGroupIds: [!Ref EKSLambdaSecurityGroup]
         SubnetIds: !Ref EKSSubnetIds
