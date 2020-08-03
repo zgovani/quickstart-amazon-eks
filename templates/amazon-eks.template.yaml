@@ -235,6 +235,9 @@ Parameters:
     Type: String
     Default: "false"
     AllowedValues: [ "true", "false" ]
+  BastionAMIID:
+    Type: String
+    Default: ""
   BastionVariables:
     Type: String
     Default: ""
@@ -339,7 +342,7 @@ Resources:
         EnableBanner: true
         BastionTenancy: default
         NumBastionHosts: "1"
-        OSImageOverride: ""
+        OSImageOverride: !Ref BastionAMIID
         VPCID: !Ref VPCID
         PublicSubnet1ID: !Ref PublicSubnet1ID
         PublicSubnet2ID: !If [2AZDeployment, !Ref PublicSubnet2ID, !Ref "AWS::NoValue"]
