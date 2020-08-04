@@ -132,6 +132,6 @@ Resources:
                   - name: K8S_CLUSTER_NAME
                     value: !Ref ClusterName
                   - name: S3_SCRIPT_URL
-                    value: !Sub 's3://${QSS3BucketName}/${QSS3KeyPrefix}scripts/windows_setup.sh'
+                    value: !Sub 's3://${QSS3BucketName}/${QSS3KeyPrefix}scripts/windows-setup.sh'
               restartPolicy: OnFailure
           backoffLimit: 4
