@@ -471,3 +471,5 @@ Outputs:
     Value: !GetAtt NodeSGFunction.Arn
   FargateProfileLambdaArn:
     Value: !GetAtt FargateProfileLambda.Arn
+  KubeManifestLambdaArn:
+    Value: !GetAtt KubeManifestLambda.Arn

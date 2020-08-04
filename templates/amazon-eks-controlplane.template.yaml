@@ -12,6 +12,8 @@ Parameters:
     Type: String
   NodeInstanceRoleArn:
     Type: String
+  WindowsNodeInstanceRoleArn:
+    Type: String
   CleanupLoadBalancersLambdaArn:
     Type: String
   GetCallerArnLambdaArn:
@@ -62,6 +64,7 @@ Conditions:
   AddUser: !Not [ !Equals [ !Ref AdditionalEKSAdminUserArn, "" ] ]
   AddRole: !Not [ !Equals [ !Ref AdditionalEKSAdminRoleArn, "" ] ]
   BastionRole: !Not [ !Equals [ !Ref BastionRole, "" ] ]
+  WindowsRole: !Not [ !Equals [ !Ref WindowsNodeInstanceRoleArn, "" ] ]
   EnablePrivateEndpoint: !Equals [ !Ref EKSPrivateAccessEndpoint, "Enabled" ]
   EnablePublicEndpoint: !Equals [ !Ref EKSPublicAccessEndpoint, "Enabled" ]
   CreateKey: !And
@@ -131,6 +134,12 @@ Resources:
             - Arn: !Ref AdditionalEKSAdminRoleArn
               Username: !Ref AdditionalEKSAdminRoleArn
               Groups: [ 'system:masters' ]
+            - !Ref 'AWS::NoValue'
+          - !If 
+            - WindowsRole
+            - Arn: !Ref WindowsNodeInstanceRoleArn
+              Username: system:node:{{EC2PrivateDNSName}}
+              Groups: [ 'system:bootstrappers', 'system:nodes', 'eks:kube-proxy-windows']
             - !Ref 'AWS::NoValue'
         Users:
           - Arn: !GetAtt CallerArn.Arn
